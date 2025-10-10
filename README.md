@@ -5,6 +5,7 @@ A mobile and web application built with React Native and Expo that helps users c
 ## 👥 Team Information
 
 **Team Member:**
+
 **Name:** Smruti Sourav Patel
 - **College ID:** 2022ebcs058
 - **Email:** 2022ebcs058@online.bits-pilani.ac.in
