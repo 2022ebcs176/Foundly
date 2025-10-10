@@ -11,6 +11,25 @@ A mobile and web application built with React Native and Expo that helps users c
 - **GitHub:** [ssouravpatel058](https://github.com/ssouravpatel058)
 - **Role:** Frontend Development
 
+- **Name:** Bhavya Jain
+- **College ID:** 2022ebcs176
+- **Email:** 2022ebcs176@online.bits-pilani.ac.in
+- **GitHub:** [2022ebcs176](https://github.com/2022ebcs176)
+- **Role:** Backend Development
+
+- **Name:** Vikas Singhal
+- **College ID:** 2022ebcs183
+- **Email:** 2022ebcs183@online.bits-pilani.ac.in
+- **GitHub:** 
+- **Role:**
+
+- **Name:** Tushar Sharma
+- **College ID:** 2022ebcs182
+- **Email:** 2022ebcs182@online.bits-pilani.ac.in
+- **GitHub:** 
+- **Role:**
+
+
 **Repository:** [Foundly](https://github.com/2022ebcs176/Foundly.git)
 
 ## 🎯 About Foundly
