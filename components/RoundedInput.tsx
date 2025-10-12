@@ -1,10 +1,10 @@
 import { ReactNode } from "react";
 import {
-    StyleSheet,
-    Text,
-    TextInput,
-    TextInputProps,
-    View,
+  StyleSheet,
+  Text,
+  TextInput,
+  TextInputProps,
+  View,
 } from "react-native";
 import { colors } from "../constants/colors";
 
@@ -29,7 +29,7 @@ export function RoundedInput({
       {label && <Text style={styles.label}>{label}</Text>}
       <View style={styles.inputWrapper}>
         <TextInput
-          placeholderTextColor="rgba(255,255,255,0.72)"
+          placeholderTextColor={colors.textLight}
           style={[styles.input, multiline && styles.textArea, inputStyle]}
           multiline={multiline}
           {...textInputProps}
@@ -47,19 +47,19 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   label: {
-    color: colors.surface,
+    color: colors.textPrimary,
     fontSize: 16,
     fontFamily: "Poppins_500Medium",
   },
   inputWrapper: {
     position: "relative",
-    backgroundColor: "rgba(255,255,255,0.14)",
+    backgroundColor: colors.inputBackground,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: colors.borderLight,
+    borderColor: colors.border,
   },
   input: {
-    color: colors.surface,
+    color: colors.textPrimary,
     fontSize: 16,
     paddingVertical: 14,
     paddingHorizontal: 18,
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
   },
   helper: {
     fontSize: 12,
-    color: "rgba(255,255,255,0.72)",
+    color: colors.textSecondary,
     fontFamily: "Poppins_400Regular",
   },
 });

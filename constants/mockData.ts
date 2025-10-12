@@ -14,9 +14,9 @@ export interface Item {
 export const MOCK_ITEMS: Item[] = [
   {
     id: "1",
-    title: "Driver's License",
-    description: "Found a driver's license near the park entrance. Contact if this belongs to you.",
-    location: "Central park, NYC",
+    title: "Aadhaar Card",
+    description: "Found an Aadhaar card near the temple entrance. Contact if this belongs to you.",
+    location: "Lingaraj Temple, Bhubaneswar",
     timeAgo: "2 hours ago",
     type: "lost",
     category: "Documents",
@@ -25,9 +25,9 @@ export const MOCK_ITEMS: Item[] = [
   },
   {
     id: "2",
-    title: "Golden Retriever - max",
+    title: "Golden Retriever - Max",
     description: "Friendly golden retriever, 3 years old wearing blue collar with name tag 'Max'.",
-    location: "Central park, NYC",
+    location: "Cubbon Park, Bangalore",
     timeAgo: "2 hours ago",
     type: "lost",
     category: "Pets",
@@ -37,8 +37,8 @@ export const MOCK_ITEMS: Item[] = [
   {
     id: "3",
     title: "iPhone 16 Pro",
-    description: "Golden iPhone 16 pro in a clear case, found on subway platform.",
-    location: "Times Square Station",
+    description: "Golden iPhone 16 pro in a clear case, found on metro platform.",
+    location: "Rajiv Chowk Metro, Delhi",
     timeAgo: "10 hours ago",
     type: "found",
     category: "Electronic",
@@ -48,8 +48,8 @@ export const MOCK_ITEMS: Item[] = [
   {
     id: "4",
     title: "Black Leather Wallet",
-    description: "Black leather wallet with cards inside, found near coffee shop.",
-    location: "Brooklyn Bridge",
+    description: "Black leather wallet with cards inside, found near chai shop.",
+    location: "Marine Drive, Mumbai",
     timeAgo: "1 day ago",
     type: "found",
     category: "Accessories",
@@ -59,8 +59,8 @@ export const MOCK_ITEMS: Item[] = [
   {
     id: "5",
     title: "Passport",
-    description: "Lost passport on subway. Urgent! Please contact if found.",
-    location: "Grand Central Terminal",
+    description: "Lost passport on local train. Urgent! Please contact if found.",
+    location: "Howrah Station, Kolkata",
     timeAgo: "3 hours ago",
     type: "lost",
     category: "Documents",
@@ -70,8 +70,8 @@ export const MOCK_ITEMS: Item[] = [
   {
     id: "6",
     title: "AirPods Pro",
-    description: "White AirPods Pro case found on park bench.",
-    location: "Central park, NYC",
+    description: "White AirPods Pro case found on park bench near lake.",
+    location: "Hussain Sagar Lake, Hyderabad",
     timeAgo: "5 hours ago",
     type: "found",
     category: "Electronic",

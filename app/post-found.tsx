@@ -107,7 +107,7 @@ export default function PostFoundScreen() {
                     label="Location*"
                     value={location}
                     onChangeText={setLocation}
-                    placeholder="where did you find this item?"
+                    placeholder="e.g., India Gate, New Delhi"
                   />
                 </View>
                 <Pressable style={styles.locationButton}>

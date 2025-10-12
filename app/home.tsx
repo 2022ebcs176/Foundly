@@ -3,14 +3,14 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View
+  Alert,
+  FlatList,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CategoryPill } from "../components/CategoryPill";
@@ -26,7 +26,7 @@ export default function HomeScreen() {
   const [showMenu, setShowMenu] = useState(false);
   const [showLocationModal, setShowLocationModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState("City, State");
+  const [selectedLocation, setSelectedLocation] = useState("Bhubaneswar, Odisha");
   const [selectedFilter, setSelectedFilter] = useState<"all" | "lost" | "found">("all");
 
   const filteredItems = MOCK_ITEMS.filter(item => {
@@ -36,7 +36,7 @@ export default function HomeScreen() {
     return matchesSearch && matchesCategory && matchesFilter;
   });
 
-  const locations = ["New York, NY", "Los Angeles, CA", "Chicago, IL", "Houston, TX", "Phoenix, AZ", "Philadelphia, PA"];
+  const locations = ["Mumbai, Maharashtra", "Delhi, NCR", "Bangalore, Karnataka", "Bhubaneswar, Odisha", "Hyderabad, Telangana", "Chennai, Tamil Nadu", "Kolkata, West Bengal", "Pune, Maharashtra"];
   const sortOptions = ["Recent", "Oldest", "Nearby"];
 
   return (

@@ -44,10 +44,11 @@ export function FloatingActionMenu({ visible, onToggle, onPostLost, onPostFound 
 const styles = StyleSheet.create({
   wrapper: {
     position: "absolute",
-    bottom: 40,
+    bottom: 90,
     alignSelf: "center",
     alignItems: "center",
     gap: 18,
+    zIndex: 1000,
   },
   menu: {
     width: 200,
@@ -75,11 +76,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primaryEnd,
     alignItems: "center",
     justifyContent: "center",
-    elevation: 12,
-    shadowColor: "#1A1042",
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
+    elevation: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
+    borderWidth: 2,
+    borderColor: colors.surface,
   },
   fabPressed: {
     transform: [{ scale: 0.96 }],

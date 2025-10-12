@@ -107,7 +107,7 @@ export default function PostLostScreen() {
                     label="Location*"
                     value={location}
                     onChangeText={setLocation}
-                    placeholder="where did you find this item?"
+                    placeholder="e.g., MG Road Metro, Bangalore"
                   />
                 </View>
                 <Pressable style={styles.locationButton}>
