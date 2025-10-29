@@ -40,7 +40,7 @@ A mobile and web application built with React Native and Expo that helps users c
 
 | Timeline | Contributors | Work Done |
 |----------|-------------|-----------|
-| Month 1 (End of September 2025) | All Team Members | Planning and structure of the app finalized |
+| Month 1 (September 2025) | All Team Members | Planning and structure of the app finalized |
 | Week 1 (by 04/10/2025) | Vikas Singhal | UI/UX design for the app completed |
 | Week 2 (by 11/10/2025) | Bhavya Jain | Project initialization |
 | Week 2 (by 11/10/2025) | Smruti Sourav Patel | Completed 70% of the Frontend of main app |
