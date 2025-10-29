@@ -88,20 +88,6 @@ Foundly is an app where users can:
 - `ItemCard` - Lost/found item display cards
 - `FloatingActionMenu` - Expandable FAB menu
 
-## 🛠️ Tech Stack
-
-- **Framework:** React Native with Expo (~54.0)
-- **Navigation:** Expo Router (~6.0)
-- **UI/Styling:**
-  - React Native StyleSheet
-  - Expo Linear Gradient
-  - Custom components
-- **Fonts:**
-  - Josefin Sans (Display)
-  - Poppins (Body text)
-- **Icons:** Expo Vector Icons (Ionicons)
-- **Language:** TypeScript
-
 ## 📦 Installation
 
 1. Clone the repository:
