@@ -43,9 +43,9 @@ A mobile and web application built with React Native and Expo that helps users c
 | Month 1 (September 2025) | All Team Members | Planning and structure of the app finalized |
 | Week 1 (by 04/10/2025) | Vikas Singhal | UI/UX design for the app completed |
 | Week 2 (by 11/10/2025) | Bhavya Jain | Project initialization |
-| Week 2 (by 11/10/2025) | Smruti Sourav Patel | Completed 70% of the Frontend of main app |
+| Week 2 (by 11/10/2025) | Smruti Sourav Patel | Worked on the Frontend of main app |
 | Week 3 (by 18/10/2025) | Tushar Sharma | Tested and reported issues in frontend |
-| Week 3 (by 18/10/2025) | Smruti Sourav Patel | Fixed reported issues, Frontend approximately 90% completed |
+| Week 3 (by 18/10/2025) | Smruti Sourav Patel | Fixed reported issues, Frontend almost complete |
 | Week 4 (by 25/10/2025) | All Team Members | Festival break - minimal work done |
 
 ## 🎯 About Foundly
