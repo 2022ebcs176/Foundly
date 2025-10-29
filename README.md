@@ -7,35 +7,51 @@ A mobile and web application built with React Native and Expo that helps users c
 **Team Member:**
 
 **Name:** Smruti Sourav Patel
+
 - **College ID:** 2022ebcs058
-- **Email:** 2022ebcs058@online.bits-pilani.ac.in
+- **Email:** <2022ebcs058@online.bits-pilani.ac.in>
 - **GitHub:** [ssouravpatel058](https://github.com/ssouravpatel058)
 - **Role:** Frontend Development
 
 **Name:** Bhavya Jain
+
 - **College ID:** 2022ebcs176
-- **Email:** 2022ebcs176@online.bits-pilani.ac.in
+- **Email:** <2022ebcs176@online.bits-pilani.ac.in>
 - **GitHub:** [2022ebcs176](https://github.com/2022ebcs176)
 - **Role:** Backend Development
 
 **Name:** Vikas Singhal
+
 - **College ID:** 2022ebcs183
-- **Email:** 2022ebcs183@online.bits-pilani.ac.in
-- **GitHub:** 
-- **Role:**
+- **Email:** <2022ebcs183@online.bits-pilani.ac.in>
+- **GitHub:**
+- **Role:** UI/UX Designer
 
 **Name:** Tushar Sharma
-- **College ID:** 2022ebcs182
-- **Email:** 2022ebcs182@online.bits-pilani.ac.in
-- **GitHub:** 
-- **Role:**
 
+- **College ID:** 2022ebcs182
+- **Email:** <2022ebcs182@online.bits-pilani.ac.in>
+- **GitHub:**
+- **Role:** Testing and Integration
 
 **Repository:** [Foundly](https://github.com/2022ebcs176/Foundly.git)
+
+## 📋 Work Done Weekly with Dates
+
+| Timeline | Contributors | Work Done |
+|----------|-------------|-----------|
+| Month 1 (End of September 2025) | All Team Members | Planning and structure of the app finalized |
+| Week 1 (by 04/10/2025) | Vikas Singhal | UI/UX design for the app completed |
+| Week 2 (by 11/10/2025) | Bhavya Jain | Project initialization |
+| Week 2 (by 11/10/2025) | Smruti Sourav Patel | Completed 70% of the Frontend of main app |
+| Week 3 (by 18/10/2025) | Tushar Sharma | Tested and reported issues in frontend |
+| Week 3 (by 18/10/2025) | Smruti Sourav Patel | Fixed reported issues, Frontend approximately 90% completed |
+| Week 4 (by 25/10/2025) | All Team Members | Festival break - minimal work done |
 
 ## 🎯 About Foundly
 
 Foundly is an app where users can:
+
 - Post about lost items they're searching for
 - Post about found items they've discovered
 - Browse a feed of lost and found items
@@ -46,6 +62,7 @@ Foundly is an app where users can:
 ## 🚀 Features
 
 ### ✅ Implemented Screens
+
 1. **Splash Screen** - Beautiful gradient splash with app logo
 2. **Login Screen** - User authentication with email/password
 3. **Register Screen** - New user sign up with validation
@@ -63,6 +80,7 @@ Foundly is an app where users can:
 6. **Post Found Item** - Form to report found items
 
 ### 🎨 UI Components
+
 - `GradientButton` - Reusable gradient button
 - `GradientBackground` - Gradient background wrapper
 - `RoundedInput` - Styled input fields
@@ -74,11 +92,11 @@ Foundly is an app where users can:
 
 - **Framework:** React Native with Expo (~54.0)
 - **Navigation:** Expo Router (~6.0)
-- **UI/Styling:** 
+- **UI/Styling:**
   - React Native StyleSheet
   - Expo Linear Gradient
   - Custom components
-- **Fonts:** 
+- **Fonts:**
   - Josefin Sans (Display)
   - Poppins (Body text)
 - **Icons:** Expo Vector Icons (Ionicons)
@@ -87,17 +105,20 @@ Foundly is an app where users can:
 ## 📦 Installation
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/2022ebcs176/Foundly.git
 cd Foundly
 ```
 
 2. Install dependencies:
+
 ```bash
 npm install
 ```
 
 3. Start the development server:
+
 ```bash
 npm start
 ```
@@ -105,21 +126,27 @@ npm start
 ## 🖥️ Running the App
 
 ### Web
+
 ```bash
 npm run web
 ```
+
 Then open [http://localhost:8081](http://localhost:8081) in your browser.
 
 ### Android
+
 ```bash
 npm run android
 ```
+
 Requires Android Studio and Android emulator or physical device.
 
 ### iOS
+
 ```bash
 npm run ios
 ```
+
 Requires macOS and Xcode.
 
 ## 📱 App Structure
@@ -154,30 +181,15 @@ Foundly/
 ## 🎨 Design
 
 The app design is based on Figma mockups with:
+
 - **Primary Colors:** Blue gradient (#5B6EF5 to #4B3FD6)
 - **Typography:** Josefin Sans for headings, Poppins for body
 - **Theme:** Modern, clean, user-friendly interface
 - **Responsive:** Adapts to different screen sizes
 
-## 🔮 Future Enhancements
-
-- Backend integration with API
-- User authentication with JWT
-- Real-time notifications
-- Chat functionality between users
-- Map integration for location
-- Image optimization and storage
-- Push notifications
-- User profiles and ratings
-- Advanced search and filters
-
-## � License
+## � Note
 
 This project is part of an academic assignment.
-
-## 🤝 Contributing
-
-This is a team project. For contributions, please contact the team members.
 
 ---
 

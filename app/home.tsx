@@ -3,14 +3,14 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-  Alert,
-  FlatList,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View
+    Alert,
+    FlatList,
+    Modal,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CategoryPill } from "../components/CategoryPill";
@@ -35,6 +35,26 @@ export default function HomeScreen() {
     const matchesFilter = selectedFilter === "all" || item.type === selectedFilter;
     return matchesSearch && matchesCategory && matchesFilter;
   });
+
+  // Handle search query change with alert for no results
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+    
+    // Check if search returns no results after user types at least 3 characters
+    if (text.length >= 3) {
+      const hasResults = MOCK_ITEMS.some(item => 
+        item.title.toLowerCase().indexOf(text.toLowerCase()) !== -1
+      );
+      
+      if (!hasResults) {
+        Alert.alert(
+          "Item Not Found",
+          "The item you're searching for does not exist in the database. Try different keywords or browse all items.",
+          [{ text: "OK" }]
+        );
+      }
+    }
+  };
 
   const locations = ["Mumbai, Maharashtra", "Delhi, NCR", "Bangalore, Karnataka", "Bhubaneswar, Odisha", "Hyderabad, Telangana", "Chennai, Tamil Nadu", "Kolkata, West Bengal", "Pune, Maharashtra"];
   const sortOptions = ["Recent", "Oldest", "Nearby"];
@@ -64,7 +84,7 @@ export default function HomeScreen() {
             placeholder="Search"
             placeholderTextColor={colors.textLight}
             value={searchQuery}
-            onChangeText={setSearchQuery}
+            onChangeText={handleSearchChange}
           />
         </View>
         <Pressable style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
