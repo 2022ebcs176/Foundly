@@ -3,52 +3,83 @@
  * This file contains API endpoints and configuration for backend integration
  */
 
-// Base API URL - Update this when backend is ready
-export const API_BASE_URL = __DEV__ 
-  ? 'http://localhost:3000/api' // Development
-  : 'https://api.foundly.app/api'; // Production (placeholder)
+import { Platform } from 'react-native';
 
-// API Endpoints
+// Base API URL - Platform-specific configuration for Spring Boot backend
+const getBaseUrl = () => {
+  if (__DEV__) {
+    // Development mode
+    if (Platform.OS === 'android') {
+      // Android Emulator uses special IP to access host machine
+      return 'http://10.0.2.2:9292';
+    } else if (Platform.OS === 'web') {
+      // Web can use localhost
+      return 'http://localhost:9292';
+    } else {
+      // iOS or other platforms - use local network IP
+      // Update this with your actual local IP if testing on physical device
+      return 'http://192.168.1.100:9292';
+    }
+  } else {
+    // Production mode
+    return 'https://api.foundly.app'; // Update with actual production URL
+  }
+};
+
+export const API_BASE_URL = getBaseUrl();
+
+// API Endpoints - Spring Boot Backend
 export const API_ENDPOINTS = {
-  // Auth endpoints
+  // Auth endpoints (if you add authentication later)
   auth: {
-    login: '/auth/login',
-    register: '/auth/register',
-    logout: '/auth/logout',
-    refresh: '/auth/refresh',
+    login: '/api/auth/login',
+    register: '/api/auth/register',
+    logout: '/api/auth/logout',
+    refresh: '/api/auth/refresh',
+    verify: '/api/auth/verify',
   },
   
-  // Items endpoints
+  // Found Items endpoints (Spring Boot)
   items: {
-    getAll: '/items',
-    getById: (id: string) => `/items/${id}`,
-    create: '/items',
-    update: (id: string) => `/items/${id}`,
-    delete: (id: string) => `/items/${id}`,
-    search: '/items/search',
+    getAll: '/api/found-items/all',
+    getById: (id: number) => `/api/found-items/${id}`,
+    create: '/api/found-items',
+    update: (id: number) => `/api/found-items/${id}`,
+    delete: (id: number) => `/api/found-items/${id}`,
+    search: '/api/found-items/search', // Query params: category, name
   },
   
-  // User endpoints
+  // User endpoints (if you add user management later)
   user: {
-    profile: '/user/profile',
-    updateProfile: '/user/profile',
-    myPosts: '/user/posts',
-    saved: '/user/saved',
+    profile: '/api/user/profile',
+    updateProfile: '/api/user/profile',
+    myPosts: '/api/user/posts',
+    saved: '/api/user/saved',
   },
   
-  // Upload endpoints
+  // Upload endpoints (if you add image upload later)
   upload: {
-    image: '/upload/image',
+    image: '/api/upload/image',
+    images: '/api/upload/images',
   },
 };
 
 // API Configuration
 export const API_CONFIG = {
-  timeout: 10000, // 10 seconds
+  timeout: 30000, // 30 seconds
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
   },
+  retryAttempts: 3,
+  retryDelay: 1000, // 1 second
+};
+
+// Pagination defaults
+export const PAGINATION = {
+  DEFAULT_PAGE: 1,
+  DEFAULT_LIMIT: 20,
+  MAX_LIMIT: 100,
 };
 
 /**

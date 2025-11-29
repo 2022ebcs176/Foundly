@@ -2,8 +2,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
+    ActivityIndicator,
     Alert,
     Pressable,
     ScrollView,
@@ -14,10 +15,35 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientButton } from "../components/GradientButton";
 import { colors } from "../constants/colors";
+import { useAuth } from "../contexts/AuthContext";
+import * as userService from "../services/user.service";
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { user, logout: authLogout, isLoading: authLoading } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+
+  // Fetch user posts on mount
+  useEffect(() => {
+    fetchUserPosts();
+  }, []);
+
+  const fetchUserPosts = async () => {
+    try {
+      setIsLoadingPosts(true);
+      const response = await userService.getUserPosts();
+      if (response.success && response.data) {
+        setUserPosts(response.data.items);
+      }
+    } catch (error) {
+      console.error('Error fetching user posts:', error);
+      // Silently fail, not critical for profile view
+    } finally {
+      setIsLoadingPosts(false);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -25,7 +51,17 @@ export default function ProfileScreen() {
       "Are you sure you want to logout?",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Logout", style: "destructive", onPress: () => router.replace("/login") }
+        { 
+          text: "Logout", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              await authLogout();
+            } catch (error) {
+              console.error('Logout error:', error);
+            }
+          }
+        }
       ]
     );
   };
@@ -55,11 +91,16 @@ export default function ProfileScreen() {
               <Ionicons name="camera" size={18} color={colors.surface} />
             </Pressable>
           </View>
-          <Text style={styles.userName}>Smruti Sourav Patel</Text>
-          <Text style={styles.userEmail}>2022ebcs058@online.bits-pilani.ac.in</Text>
+          <Text style={styles.userName}>{user?.name || "User"}</Text>
+          <Text style={styles.userEmail}>{user?.email || "email@example.com"}</Text>
           <Text style={styles.userStats}>
-            <Text style={styles.statNumber}>12</Text> Items Posted • 
-            <Text style={styles.statNumber}> 5</Text> Items Found
+            {isLoadingPosts ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <>
+                <Text style={styles.statNumber}>{userPosts.length}</Text> Items Posted
+              </>
+            )}
           </Text>
         </View>
 
@@ -154,8 +195,13 @@ export default function ProfileScreen() {
         <GradientButton
           containerStyle={styles.logoutButton}
           onPress={handleLogout}
+          disabled={authLoading}
         >
-          Logout
+          {authLoading ? (
+            <ActivityIndicator color={colors.surface} />
+          ) : (
+            "Logout"
+          )}
         </GradientButton>
 
         <Text style={styles.version}>Version 1.0.0</Text>

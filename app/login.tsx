@@ -1,9 +1,11 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Link, useRouter } from "expo-router";
+import { Link } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
+    ActivityIndicator,
+    Alert,
     Image,
     KeyboardAvoidingView,
     Platform,
@@ -15,11 +17,61 @@ import {
 import { GradientButton } from "../components/GradientButton";
 import { RoundedInput } from "../components/RoundedInput";
 import { colors } from "../constants/colors";
+import { useAuth } from "../contexts/AuthContext";
+import { ApiError } from "../utils/api";
+import { validateEmail } from "../utils/auth";
 
 export default function LoginScreen() {
-  const router = useRouter();
-  const [email, setEmail] = useState("smruti@foundly.com");
-  const [password, setPassword] = useState("lost&found123");
+  const { login, isLoading } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({ email: "", password: "" });
+
+  const handleLogin = async () => {
+    setErrors({ email: "", password: "" });
+
+    let hasError = false;
+    const newErrors = { email: "", password: "" };
+
+    if (!email.trim()) {
+      newErrors.email = "Email is required";
+      hasError = true;
+    } else if (!validateEmail(email)) {
+      newErrors.email = "Invalid email format";
+      hasError = true;
+    }
+
+    if (!password.trim()) {
+      newErrors.password = "Password is required";
+      hasError = true;
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+      hasError = true;
+    }
+
+    if (hasError) {
+      setErrors(newErrors);
+      return;
+    }
+
+    try {
+      await login({ email: email.trim(), password });
+    } catch (error: any) {
+      if (error instanceof ApiError) {
+        Alert.alert(
+          "Login Failed",
+          error.message || "Invalid email or password. Please try again.",
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert(
+          "Login Failed",
+          "An unexpected error occurred. Please try again.",
+          [{ text: "OK" }]
+        );
+      }
+    }
+  };
 
   return (
     <LinearGradient colors={[colors.primaryStart, colors.primaryEnd]} style={styles.container}>
@@ -43,25 +95,41 @@ export default function LoginScreen() {
             <RoundedInput
               label="Email"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={(text) => {
+                setEmail(text);
+                setErrors({ ...errors, email: "" });
+              }}
               keyboardType="email-address"
               autoCapitalize="none"
               icon={<Ionicons name="mail-outline" size={22} color={colors.primaryEnd} />}
-              placeholder="lost&found@gmail.com"
+              placeholder="your.email@example.com"
+              editable={!isLoading}
             />
+            {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
             <RoundedInput
               label="Password"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={(text) => {
+                setPassword(text);
+                setErrors({ ...errors, password: "" });
+              }}
               secureTextEntry
               icon={<Ionicons name="lock-closed-outline" size={22} color={colors.primaryEnd} />}
               placeholder="********"
+              editable={!isLoading}
             />
+            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
+            
             <GradientButton
               containerStyle={styles.buttonSpacing}
-              onPress={() => router.push("/home")}
+              onPress={handleLogin}
+              disabled={isLoading}
             >
-              login
+              {isLoading ? (
+                <ActivityIndicator color={colors.surface} />
+              ) : (
+                "Login"
+              )}
             </GradientButton>
           </View>
 
@@ -119,5 +187,11 @@ const styles = StyleSheet.create({
     color: colors.surface,
     textDecorationLine: "underline",
     fontFamily: "Poppins_500Medium",
+  },
+  errorText: {
+    color: "#ff4444",
+    fontSize: 12,
+    fontFamily: "Poppins_400Regular",
+    marginTop: -12,
   },
 });

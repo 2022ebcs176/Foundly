@@ -47,6 +47,18 @@ A mobile and web application built with React Native and Expo that helps users c
 | Week 3 (by 18/10/2025) | Tushar Sharma | Tested and reported issues in frontend |
 | Week 3 (by 18/10/2025) | Smruti Sourav Patel | Fixed reported issues, Frontend almost complete |
 | Week 4 (by 25/10/2025) | All Team Members | Festival break - minimal work done |
+| Week 5 (by 31/10/2025) | Bhavya Jain | Prepared the server for backend |
+| Week 5 (by 31/10/2025) | Smruti Sourav Patel | Fixed internet connectivity and added item not found page |
+| Week 5 (by 31/10/2025) | Vikas Singhal | Started working on admin panel UI/UX design |
+| Week 5 (by 31/10/2025) | Tushar Sharma | Started working on admin panel frontend code |
+| Week 6 (by 07/11/2025) | Tushar Sharma & Vikas Singhal | Made frontend for admin web panel |
+| Week 6 (by 07/11/2025) | Bhavya Jain | Started working on database |
+| Week 6 (by 07/11/2025) | Smruti Sourav Patel | Worked on polishing the frontend of main android app |
+| Week 7 (by 14/11/2025) | Smruti Sourav Patel | Added camera use, date and time picker for the app |
+| Week 7 (by 14/11/2025) | Bhavya Jain | Started working on APIs for backend |
+| Week 8 (by 21/11/2025) | All Team Members | Exam week - minimal work done |
+| Week 9 (by 28/11/2025) | Smruti Sourav Patel | Added the APIs to frontend with help from Bhavya |
+| Week 9 (by 28/11/2025) | All Team Members | Working on integration |
 
 ## 🎯 About Foundly
 

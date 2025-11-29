@@ -1,16 +1,18 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-    Alert,
-    FlatList,
-    Modal,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Modal,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CategoryPill } from "../components/CategoryPill";
@@ -18,6 +20,9 @@ import { FloatingActionMenu } from "../components/FloatingActionMenu";
 import { ItemCard } from "../components/ItemCard";
 import { colors } from "../constants/colors";
 import { CATEGORIES, MOCK_ITEMS } from "../constants/mockData";
+import * as itemsService from "../services/items.service";
+import type { Item } from "../types/api.types";
+import { ApiError } from "../utils/api";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -28,9 +33,63 @@ export default function HomeScreen() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState("Bhubaneswar, Odisha");
   const [selectedFilter, setSelectedFilter] = useState<"all" | "lost" | "found">("all");
+  const [items, setItems] = useState<Item[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [useApi, setUseApi] = useState(true); // Toggle between API and mock data
 
-  const filteredItems = MOCK_ITEMS.filter(item => {
-    const matchesSearch = item.title.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1;
+  // Fetch items from API
+  const fetchItems = useCallback(async () => {
+    if (!useApi) {
+      // Use mock data as fallback
+      setItems(MOCK_ITEMS as any);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const response = await itemsService.getAllItems({
+        type: selectedFilter !== "all" ? selectedFilter : undefined,
+        category: selectedCategory || undefined,
+        search: searchQuery || undefined,
+      });
+      
+      if (response.success && response.data) {
+        setItems(response.data.items);
+      }
+    } catch (error: any) {
+      console.error("Error fetching items:", error);
+      
+      // Fallback to mock data if API fails
+      if (error instanceof ApiError) {
+        console.log("API not available, using mock data");
+        setItems(MOCK_ITEMS as any);
+        setUseApi(false);
+      } else {
+        Alert.alert("Error", "Failed to load items. Showing cached data.");
+        setItems(MOCK_ITEMS as any);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [selectedFilter, selectedCategory, searchQuery, useApi]);
+
+  // Refresh items
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await fetchItems();
+    setIsRefreshing(false);
+  }, [fetchItems]);
+
+  // Load items on mount and when filters change
+  useEffect(() => {
+    fetchItems();
+  }, [selectedFilter, selectedCategory]);
+
+  // Filter items locally if using mock data or for immediate feedback
+  const filteredItems = items.filter(item => {
+    const matchesSearch = !searchQuery || item.title.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1;
     const matchesCategory = !selectedCategory || item.category === selectedCategory;
     const matchesFilter = selectedFilter === "all" || item.type === selectedFilter;
     return matchesSearch && matchesCategory && matchesFilter;
@@ -40,20 +99,49 @@ export default function HomeScreen() {
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
     
-    // Check if search returns no results after user types at least 3 characters
+    // Trigger search after user stops typing (debounced)
     if (text.length >= 3) {
-      const hasResults = MOCK_ITEMS.some(item => 
-        item.title.toLowerCase().indexOf(text.toLowerCase()) !== -1
-      );
-      
-      if (!hasResults) {
-        Alert.alert(
-          "Item Not Found",
-          "The item you're searching for does not exist in the database. Try different keywords or browse all items.",
-          [{ text: "OK" }]
-        );
-      }
+      fetchItems();
+    } else if (text.length === 0) {
+      fetchItems();
     }
+  };
+
+  // Helper function to format time ago
+  const getTimeAgo = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    const weeks = Math.floor(days / 7);
+    if (weeks < 4) return `${weeks}w ago`;
+    const months = Math.floor(days / 30);
+    return `${months}mo ago`;
+  };
+
+  // Helper function to get location string
+  const getLocationString = (location: any): string => {
+    if (typeof location === 'string') return location;
+    if (location?.city && location?.state) return `${location.city}, ${location.state}`;
+    if (location?.city) return location.city;
+    if (location?.address) return location.address;
+    return "Unknown location";
+  };
+
+  // Helper function to get image source
+  const getImageSource = (item: Item): any => {
+    if (item.images && item.images.length > 0) {
+      return { uri: item.images[0] };
+    }
+    // Fallback to default image
+    return require("../assets/images/icon.png");
   };
 
   const locations = ["Mumbai, Maharashtra", "Delhi, NCR", "Bangalore, Karnataka", "Bhubaneswar, Odisha", "Hyderabad, Telangana", "Chennai, Tamil Nadu", "Kolkata, West Bengal", "Pune, Maharashtra"];
@@ -116,24 +204,39 @@ export default function HomeScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.feedList}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            colors={[colors.accent]}
+            tintColor={colors.accent}
+          />
+        }
         renderItem={({ item }) => (
           <ItemCard
             title={item.title}
             description={item.description}
-            location={item.location}
-            timeAgo={item.timeAgo}
+            location={getLocationString(item.location)}
+            timeAgo={getTimeAgo(item.createdAt)}
             type={item.type as "lost" | "found"}
-            image={item.image}
+            image={getImageSource(item)}
             onPress={() => {
               router.push(`/item-detail?id=${item.id}`);
             }}
           />
         )}
         ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Ionicons name="search-outline" size={64} color={colors.textLight} />
-            <Text style={styles.emptyText}>No items found</Text>
-          </View>
+          isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.accent} />
+              <Text style={styles.loadingText}>Loading items...</Text>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons name="search-outline" size={64} color={colors.textLight} />
+              <Text style={styles.emptyText}>No items found</Text>
+            </View>
+          )
         }
       />
 
@@ -349,6 +452,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Poppins_500Medium",
     color: colors.textLight,
+  },
+  loadingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 60,
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontFamily: "Poppins_400Regular",
+    color: colors.textSecondary,
   },
   bottomNav: {
     position: "absolute",
