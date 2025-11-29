@@ -1,4 +1,5 @@
-import { API_BASE_URL, API_CONFIG } from '../constants/api';
+import { Platform } from 'react-native'; // Added By Bhavya
+// import { API_BASE_URL, API_CONFIG } from '../constants/api';  : Removed By Bhavya
 import type { ApiErrorResponse } from '../types/api.types';
 import { checkInternetConnection } from './network';
 import { clearAuthData, getAuthToken } from './storage';
@@ -6,6 +7,20 @@ import { clearAuthData, getAuthToken } from './storage';
 /**
  * Custom error class for API errors
  */
+const Port = "9292" ;  // Added By Bhavya
+
+const getBaseUrl = () => {
+  if(Platform.OS === "android") 
+  {
+    return `http://10.0.2.2:${Port}`;
+  }
+  return `http://localhost:${Port}` ;
+}
+
+export const API_BASE_URL = getBaseUrl() ;
+
+// Added Till here : Bhavya ! 
+
 export class ApiError extends Error {
   statusCode?: number;
   code?: string;
