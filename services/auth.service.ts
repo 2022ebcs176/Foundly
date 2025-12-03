@@ -1,120 +1,94 @@
 /**
  * Authentication Service for Foundly App
- * Handles all authentication-related API calls
+ * Handles user registration, login, and logout
  */
 
 import { API_ENDPOINTS } from '../constants/api';
-import type {
-    ApiResponse,
-    AuthResponse,
-    LoginRequest,
-    RegisterRequest,
-} from '../types/api.types';
-import { post } from '../utils/api';
-import { logout as logoutUtil, setAuthData } from '../utils/auth';
+import type { LoginRequest, RegisterRequest, User } from '../types/api.types';
+import { api } from '../utils/api';
+import { clearAuthData, getUserData, saveUserData, saveUsername } from '../utils/storage';
 
-/**
- * Login user with email and password
- */
-export const login = async (credentials: LoginRequest): Promise<AuthResponse> => {
-  try {
-    const response = await post<AuthResponse>(
-      API_ENDPOINTS.auth.login,
-      credentials
-    );
-
-    // Store authentication data
-    if (response.success && response.data) {
-      await setAuthData(
-        response.data.token,
-        response.data.user,
-        response.data.refreshToken
-      );
-    }
-
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
-
-/**
- * Register new user
- */
-export const register = async (userData: RegisterRequest): Promise<AuthResponse> => {
-  try {
-    const response = await post<AuthResponse>(
-      API_ENDPOINTS.auth.register,
-      userData
-    );
-
-    // Store authentication data
-    if (response.success && response.data) {
-      await setAuthData(
-        response.data.token,
-        response.data.user,
-        response.data.refreshToken
-      );
-    }
-
-    return response;
-  } catch (error: any) {
-    throw error;
-  }
-};
-
-/**
- * Logout current user
- */
-export const logout = async (): Promise<void> => {
-  try {
-    // Call backend logout endpoint (optional, for token invalidation)
+export class AuthService {
+  /**
+   * Register a new user
+   * Backend returns: "User Registered Successfully !" (plain text)
+   */
+  async register(data: RegisterRequest): Promise<string> {
     try {
-      await post(API_ENDPOINTS.auth.logout);
-    } catch {
-      // Continue with local logout even if backend call fails
-      console.warn('Backend logout failed, continuing with local logout');
-    }
-
-    // Clear local authentication data
-    await logoutUtil();
-  } catch (error: any) {
-    throw error;
-  }
-};
-
-/**
- * Refresh authentication token
- */
-export const refreshToken = async (): Promise<AuthResponse> => {
-  try {
-    const response = await post<AuthResponse>(API_ENDPOINTS.auth.refresh);
-
-    // Update stored token
-    if (response.success && response.data) {
-      await setAuthData(
-        response.data.token,
-        response.data.user,
-        response.data.refreshToken
+      const message = await api.post<string>(
+        API_ENDPOINTS.auth.register,
+        data
       );
+      
+      // Backend returns plain text success message
+      return message;
+    } catch (error) {
+      throw error;
     }
-
-    return response;
-  } catch (error: any) {
-    throw error;
   }
-};
 
-/**
- * Verify current authentication token
- */
-export const verifyAuth = async (): Promise<boolean> => {
-  try {
-    const response = await post<ApiResponse<{ valid: boolean }>>(
-      '/auth/verify'
-    );
-    return response.success && response.data?.valid === true;
-  } catch {
-    return false;
+  /**
+   * Login a user
+   * Backend returns: "Login Successfull !" (plain text)
+   * We need to store the username from the request
+   */
+  async login(data: LoginRequest): Promise<User> {
+    try {
+      // Backend returns plain text success message: "Login Successfull !"
+      await api.post<string>(
+        API_ENDPOINTS.auth.login,
+        data
+      );
+      
+      // Backend returns plain text success message
+      // We need to store the username (email is used as identifier)
+      // Since backend doesn't return the username, we need to extract it from email
+      // For now, we'll use the email prefix as username
+      const username = data.email.split('@')[0];
+      
+      const user: User = {
+        username: username,
+        email: data.email,
+      };
+      
+      // Save username (used as API key for authenticated requests)
+      await saveUsername(username);
+      
+      // Save user data
+      await saveUserData(user);
+      
+      return user;
+    } catch (error) {
+      throw error;
+    }
   }
-};
+
+  /**
+   * Logout current user
+   */
+  async logout(): Promise<void> {
+    try {
+      await clearAuthData();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Get current logged-in user
+   */
+  async getCurrentUser(): Promise<User | null> {
+    return await getUserData();
+  }
+
+  /**
+   * Check if user is authenticated
+   */
+  async isAuthenticated(): Promise<boolean> {
+    const user = await this.getCurrentUser();
+    return user !== null;
+  }
+}
+
+// Export singleton instance
+export const authService = new AuthService();

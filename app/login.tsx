@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
@@ -17,14 +17,14 @@ import {
 import { GradientButton } from "../components/GradientButton";
 import { RoundedInput } from "../components/RoundedInput";
 import { colors } from "../constants/colors";
-import { useAuth } from "../contexts/AuthContext";
+import { authService } from "../services/auth.service";
 import { ApiError } from "../utils/api";
-import { validateEmail } from "../utils/auth";
 
 export default function LoginScreen() {
-  const { login, isLoading } = useAuth();
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "" });
 
   const handleLogin = async () => {
@@ -33,10 +33,12 @@ export default function LoginScreen() {
     let hasError = false;
     const newErrors = { email: "", password: "" };
 
+    // Simple email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim()) {
       newErrors.email = "Email is required";
       hasError = true;
-    } else if (!validateEmail(email)) {
+    } else if (!emailRegex.test(email)) {
       newErrors.email = "Invalid email format";
       hasError = true;
     }
@@ -55,7 +57,16 @@ export default function LoginScreen() {
     }
 
     try {
-      await login({ email: email.trim(), password });
+      setIsLoading(true);
+      
+      // Call the real backend API
+      const user = await authService.login({ 
+        email: email.trim(), 
+        password 
+      });
+      
+      // Login successful - navigate to home
+      router.replace("/home");
     } catch (error: any) {
       if (error instanceof ApiError) {
         Alert.alert(
@@ -70,6 +81,8 @@ export default function LoginScreen() {
           [{ text: "OK" }]
         );
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 

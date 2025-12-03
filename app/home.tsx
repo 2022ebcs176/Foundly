@@ -137,8 +137,9 @@ export default function HomeScreen() {
 
   // Helper function to get image source
   const getImageSource = (item: Item): any => {
-    if (item.images && item.images.length > 0) {
-      return { uri: item.images[0] };
+    // For mock data compatibility
+    if (item.image) {
+      return item.image;
     }
     // Fallback to default image
     return require("../assets/images/icon.png");
@@ -211,19 +212,19 @@ export default function HomeScreen() {
             colors={[colors.accent]}
             tintColor={colors.accent}
           />
-        }
         renderItem={({ item }) => (
           <ItemCard
             title={item.title}
             description={item.description}
             location={getLocationString(item.location)}
-            timeAgo={getTimeAgo(item.createdAt)}
+            timeAgo={item.timeAgo || getTimeAgo(item.date)}
             type={item.type as "lost" | "found"}
             image={getImageSource(item)}
             onPress={() => {
               router.push(`/item-detail?id=${item.id}`);
             }}
           />
+        )}/>
         )}
         ListEmptyComponent={
           isLoading ? (

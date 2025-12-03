@@ -1,5 +1,5 @@
 import { LinearGradient } from "expo-linear-gradient";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
@@ -14,38 +14,42 @@ import {
 } from "react-native";
 import { GradientButton } from "../components/GradientButton";
 import { RoundedInput } from "../components/RoundedInput";
+import { API_BASE_URL } from "../constants/api";
 import { colors } from "../constants/colors";
-import { useAuth } from "../contexts/AuthContext";
+import { authService } from "../services/auth.service";
 import { ApiError } from "../utils/api";
-import { validateEmail, validatePassword } from "../utils/auth";
+import { testBackendConnection, testInternetConnection } from "../utils/network-test";
 
 export default function RegisterScreen() {
-  const { register, isLoading } = useAuth();
-  const [name, setName] = useState("");
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [errors, setErrors] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
+  const [errors, setErrors] = useState({ username: "", email: "", password: "", confirmPassword: "" });
 
   const handleSignUp = async () => {
-    setErrors({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
+    setErrors({ username: "", email: "", password: "", confirmPassword: "" });
 
     let hasError = false;
-    const newErrors = { name: "", email: "", phone: "", password: "", confirmPassword: "" };
+    const newErrors = { username: "", email: "", password: "", confirmPassword: "" };
 
-    if (!name.trim()) {
-      newErrors.name = "Name is required";
+    // Validate username
+    if (!username.trim()) {
+      newErrors.username = "Username is required";
       hasError = true;
-    } else if (name.trim().length < 2) {
-      newErrors.name = "Name must be at least 2 characters";
+    } else if (username.trim().length < 3) {
+      newErrors.username = "Username must be at least 3 characters";
       hasError = true;
     }
 
+    // Simple email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!email.trim()) {
       newErrors.email = "Email is required";
       hasError = true;
-    } else if (!validateEmail(email)) {
+    } else if (!emailRegex.test(email)) {
       newErrors.email = "Invalid email format";
       hasError = true;
     }
@@ -53,12 +57,9 @@ export default function RegisterScreen() {
     if (!password.trim()) {
       newErrors.password = "Password is required";
       hasError = true;
-    } else {
-      const passwordValidation = validatePassword(password);
-      if (!passwordValidation.isValid) {
-        newErrors.password = passwordValidation.errors[0];
-        hasError = true;
-      }
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+      hasError = true;
     }
 
     if (!confirmPassword.trim()) {
@@ -75,12 +76,21 @@ export default function RegisterScreen() {
     }
 
     try {
-      await register({
-        name: name.trim(),
+      setIsLoading(true);
+      
+      // Call the real backend API
+      await authService.register({
+        username: username.trim(),
         email: email.trim(),
-        password,
-        phone: phone.trim() || undefined,
+        password: password,
       });
+      
+      // Registration successful
+      Alert.alert(
+        "Success",
+        "Account created successfully! Please login.",
+        [{ text: "OK", onPress: () => router.replace("/login") }]
+      );
     } catch (error: any) {
       if (error instanceof ApiError) {
         Alert.alert(
@@ -95,6 +105,52 @@ export default function RegisterScreen() {
           [{ text: "OK" }]
         );
       }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTestNetwork = async () => {
+    setIsLoading(true);
+    try {
+      // Test internet connection first
+      const internetTest = await testInternetConnection();
+      console.log('Internet test:', internetTest);
+      
+      if (!internetTest.success) {
+        Alert.alert(
+          "❌ No Internet",
+          "Your device has no internet connection. Please check WiFi/Data.",
+          [{ text: "OK" }]
+        );
+        return;
+      }
+      
+      // Test backend connection
+      const backendTest = await testBackendConnection(API_BASE_URL);
+      console.log('Backend test:', backendTest);
+      
+      if (backendTest.success) {
+        Alert.alert(
+          "✅ Connection OK",
+          `Internet: Working ✅\nBackend: Reachable ✅\nURL: ${API_BASE_URL}\nStatus: ${backendTest.statusCode}`,
+          [{ text: "OK" }]
+        );
+      } else {
+        Alert.alert(
+          "⚠️ Backend Offline",
+          `Internet: Working ✅\nBackend: Not Running ❌\n\nURL: ${API_BASE_URL}\n\nPlease start your Spring Boot server on port 9292.`,
+          [{ text: "OK" }]
+        );
+      }
+    } catch (error: any) {
+      Alert.alert(
+        "Network Test Failed",
+        error.message || "Unknown error",
+        [{ text: "OK" }]
+      );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -115,16 +171,17 @@ export default function RegisterScreen() {
 
           <View style={styles.formCard}>
             <RoundedInput
-              label="Full Name"
-              value={name}
+              label="Username"
+              value={username}
               onChangeText={(text) => {
-                setName(text);
-                setErrors({ ...errors, name: "" });
+                setUsername(text);
+                setErrors({ ...errors, username: "" });
               }}
-              placeholder="John Doe"
+              placeholder="johndoe"
+              autoCapitalize="none"
               editable={!isLoading}
             />
-            {errors.name ? <Text style={styles.errorText}>{errors.name}</Text> : null}
+            {errors.username ? <Text style={styles.errorText}>{errors.username}</Text> : null}
             
             <RoundedInput
               label="Email"
@@ -139,15 +196,6 @@ export default function RegisterScreen() {
               editable={!isLoading}
             />
             {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
-            
-            <RoundedInput
-              label="Phone (Optional)"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-              placeholder="+91 1234567890"
-              editable={!isLoading}
-            />
             
             <RoundedInput
               label="Password"
@@ -184,6 +232,19 @@ export default function RegisterScreen() {
                 <ActivityIndicator color={colors.surface} />
               ) : (
                 "Sign Up"
+              )}
+            </GradientButton>
+
+            {/* Network Test Button - For Debugging */}
+            <GradientButton
+              containerStyle={styles.buttonSpacing}
+              onPress={handleTestNetwork}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={colors.surface} />
+              ) : (
+                "🔍 Test Network Connection"
               )}
             </GradientButton>
           </View>
