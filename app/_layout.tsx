@@ -12,6 +12,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { colors } from "../constants/colors";
+import { Logger } from "../utils/logger";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,6 +36,44 @@ export default function RootLayout() {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  useEffect(() => {
+    // Initialize console patch so all console.* are captured by Logger
+    try {
+      Logger.initConsolePatch();
+    } catch (e) {
+      // ignore
+    }
+
+    // Capture unhandled promise rejections (web)
+    try {
+      if (typeof window !== 'undefined' && (window as any).addEventListener) {
+        (window as any).addEventListener('unhandledrejection', (e: any) => {
+          void Logger.error('Unhandled promise rejection', { reason: e?.reason ?? e });
+        });
+
+        (window as any).addEventListener('error', (ev: any) => {
+          void Logger.error('Uncaught error', { message: ev?.message, filename: ev?.filename, lineno: ev?.lineno, colno: ev?.colno });
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+
+    // React Native global handler (if available)
+    try {
+      const globalAny: any = global as any;
+      if (globalAny.ErrorUtils && typeof globalAny.ErrorUtils.setGlobalHandler === 'function') {
+        const prev = globalAny.ErrorUtils.getGlobalHandler && globalAny.ErrorUtils.getGlobalHandler();
+        globalAny.ErrorUtils.setGlobalHandler((error: any, isFatal?: boolean) => {
+          void Logger.error('Uncaught JS error', { error: error?.message ?? error, isFatal });
+          if (prev) prev(error, isFatal);
+        });
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
 
   if (!fontsLoaded) {
     return null;

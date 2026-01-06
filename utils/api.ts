@@ -4,6 +4,7 @@
  */
 
 import { API_BASE_URL } from '../constants/api';
+import { Logger } from './logger';
 import { getUsername } from './storage';
 
 /**
@@ -39,9 +40,18 @@ async function request<T = any>(
       ...options.headers,
     },
   };
+  // Log request start (do not await to avoid blocking)
+  void Logger.debug('API request:start', {
+    url,
+    method: (config && (config.method || 'GET')),
+    headers: config.headers,
+    bodyPreview: typeof config.body === 'string' ? (config.body as string).slice(0, 200) : undefined,
+  });
 
   try {
     const response = await fetch(url, config);
+    // Log status
+    void Logger.info('API response:status', { url, status: response.status });
     
     // Handle text responses (backend returns plain text for auth endpoints)
     const contentType = response.headers.get('content-type');
@@ -49,9 +59,11 @@ async function request<T = any>(
     
     if (isJson) {
       const data = await response.json();
+      void Logger.debug('API response:body', { url, status: response.status, bodyPreview: data && typeof data === 'object' ? JSON.stringify(data).slice(0, 1000) : String(data).slice(0,500) });
       
       if (!response.ok) {
         const errorMessage = (data as any)?.message || `API Error: ${response.statusText}`;
+        void Logger.error('API error response', { url, status: response.status, body: data });
         throw new ApiError(errorMessage, response.status);
       }
       
@@ -59,14 +71,17 @@ async function request<T = any>(
     } else {
       // Plain text response
       const text = await response.text();
+      void Logger.debug('API response:text', { url, status: response.status, bodyPreview: text && String(text).slice(0, 1000) });
       
       if (!response.ok) {
+        void Logger.error('API error response:text', { url, status: response.status, body: text });
         throw new ApiError(text || `API Error: ${response.statusText}`, response.status);
       }
       
       return text as T;
     }
   } catch (error) {
+    void Logger.error('API request:failed', { url, error: (error as any)?.message ?? String(error) });
     if (error instanceof ApiError) {
       throw error;
     }
