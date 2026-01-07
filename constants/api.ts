@@ -7,23 +7,10 @@ import { Platform } from 'react-native';
 
 // Platform-aware base URL configuration
 const getBaseUrl = () => {
-  if (__DEV__) {
-    // Development mode
-    if (Platform.OS === 'android') {
-      // Android Emulator uses special IP to access host machine
-      return 'http://10.0.2.2:9292';
-    } else if (Platform.OS === 'web') {
-      // Web can use localhost
-      return 'http://localhost:9292';
-    } else {
-      // iOS or physical devices - use local network IP
-      // Update this with your actual local IP if testing on physical device
-      return 'http://192.168.1.100:9292';
-    }
-  } else {
-    // Production mode
-    return 'https://api.foundly.app'; // Update with actual production URL
-  }
+  // Use hosted backend for both dev and production. If you need to
+  // override during local development, change this value or add
+  // environment-based logic here.
+  return 'https://foundly-backend.onrender.com';
 };
 
 export const API_BASE_URL = getBaseUrl();
