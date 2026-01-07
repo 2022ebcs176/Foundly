@@ -127,6 +127,18 @@ export async function postFoundItem(data: CreateFoundItemRequest): Promise<{
 }
 
 /**
+ * Generic create item wrapper used by UI screens (post-found/post-lost)
+ */
+export async function createItem(data: CreateFoundItemRequest): Promise<{
+  success: boolean;
+  data?: FoundItem;
+  message?: string;
+}> {
+  // For now, forward to postFoundItem (backend expects same payload)
+  return postFoundItem(data);
+}
+
+/**
  * Get available categories
  */
 export async function getCategories(): Promise<{

@@ -212,6 +212,7 @@ export default function HomeScreen() {
             colors={[colors.accent]}
             tintColor={colors.accent}
           />
+        }
         renderItem={({ item }) => (
           <ItemCard
             title={item.title}
@@ -224,7 +225,6 @@ export default function HomeScreen() {
               router.push(`/item-detail?id=${item.id}`);
             }}
           />
-        )}/>
         )}
         ListEmptyComponent={
           isLoading ? (

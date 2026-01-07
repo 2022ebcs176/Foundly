@@ -8,6 +8,15 @@ type Level = 'debug' | 'info' | 'warn' | 'error';
 const LOG_KEY = 'foundly_logs_v1';
 const MAX_ENTRIES = 500;
 
+// Preserve original console methods to avoid recursion when we patch them
+const ORIGINAL_CONSOLE = {
+  log: console.log.bind(console),
+  info: console.info ? console.info.bind(console) : console.log.bind(console),
+  warn: console.warn.bind(console),
+  error: console.error.bind(console),
+  debug: console.debug ? console.debug.bind(console) : console.log.bind(console),
+};
+
 function now() {
   return new Date().toISOString();
 }
@@ -58,9 +67,10 @@ export const Logger = {
     const entry = { ts: now(), level, message, meta: meta === undefined ? null : meta };
 
     // Mirror to console for normal development visibility
-    if (level === 'error') console.error('[FOUNDLY]', message, meta);
-    else if (level === 'warn') console.warn('[FOUNDLY]', message, meta);
-    else console.log('[FOUNDLY]', message, meta);
+    // Use original console methods to avoid triggering patched console wrappers
+    if (level === 'error') ORIGINAL_CONSOLE.error('[FOUNDLY]', message, meta);
+    else if (level === 'warn') ORIGINAL_CONSOLE.warn('[FOUNDLY]', message, meta);
+    else ORIGINAL_CONSOLE.log('[FOUNDLY]', message, meta);
 
     // Also write structured JSON to stdout/stderr so VS Code captures it when debugging
     try {
@@ -93,7 +103,10 @@ export const Logger = {
   async clearStored() { return storage.clear(); },
   initConsolePatch() {
     try {
-      if (typeof window === 'undefined') return;
+      // Only patch console in web browser environments. React Native's
+      // console implementation can behave differently and patching it
+      // may cause recursive formatting -> stack overflows.
+      if (typeof window === 'undefined' || typeof (window as any).document === 'undefined') return;
       const orig = { log: console.log.bind(console), info: console.info?.bind(console), warn: console.warn.bind(console), error: console.error.bind(console), debug: console.debug?.bind(console) } as any;
 
       console.log = (...args: any[]) => { orig.log(...args); void this.debug(String(args[0] ?? ''), args.slice(1)); };
