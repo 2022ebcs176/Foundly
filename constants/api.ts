@@ -3,7 +3,6 @@
  * Backend: Spring Boot on port 9292
  */
 
-import { Platform } from 'react-native';
 
 // Platform-aware base URL configuration
 const getBaseUrl = () => {
