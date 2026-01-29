@@ -36,18 +36,18 @@ export interface FoundItem {
   itemImages: string[];
 }
 
-// Create Found Item request
+// Create Found Item request - matches backend API exactly
 export interface CreateFoundItemRequest {
-  itemName: string;
-  itemColor: string;
-  itemDescription: string;
-  itemHighlight: string;
-  time: string;
-  date: string;
-  venue: string;
-  postedBy: string;
-  itemCategory: string;
-  itemImages: string[];
+  itemName: string; // Required
+  itemColor: string; // Required
+  itemDescription: string; // Required
+  itemHighlight: string; // Required
+  time?: string; // Optional - format: HH:mm (24-hour, e.g., "14:30")
+  date?: string; // Optional - format: yyyy-MM-dd (e.g., "2024-01-21")
+  venue: string; // Required
+  postedBy: string; // Required - username
+  itemCategory: string; // Required
+  itemImages: string[]; // Required - array of URLs or base64
 }
 
 // Claim request
@@ -75,13 +75,16 @@ export interface Claim {
 
 // Item type for UI (compatible with both mock data and API)
 export interface Item {
-  id: string;
-  title: string;
-  description: string;
-  location: string;
-  timeAgo: string;
-  type: "lost" | "found";
-  category: string;
-  image: any;
+  id: number;
+  itemName: string;
+  itemColor: string;
+  itemDescription: string;
+  itemHighlight: string;
+  time: string;
   date: string;
+  venue: string;
+  postedBy: string;
+  itemCategory: string;
+  itemImages: string[];
+  type?: "lost" | "found";
 }

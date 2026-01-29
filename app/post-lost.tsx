@@ -1,10 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker from "@react-native-community/datetimepicker";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
@@ -23,6 +23,7 @@ import { colors } from "../constants/colors";
 import * as itemsService from "../services/items.service";
 import * as uploadService from "../services/upload.service";
 import { ApiError } from "../utils/api";
+import { getUsername } from "../utils/storage";
 
 export default function PostLostScreen() {
   const router = useRouter();
@@ -35,16 +36,26 @@ export default function PostLostScreen() {
   const [venue, setVenue] = useState("");
   const [postedBy, setPostedBy] = useState("");
   const [category, setCategory] = useState("");
-  const [location, setLocation] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  
+
   // Date/Time picker states
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [selectedTime, setSelectedTime] = useState(new Date());
+
+  // Load current user's username on mount
+  useEffect(() => {
+    const loadUsername = async () => {
+      const username = await getUsername();
+      if (username) {
+        setPostedBy(username);
+      }
+    };
+    loadUsername();
+  }, []);
 
   const showImagePickerOptions = () => {
     Alert.alert(
@@ -64,14 +75,17 @@ export default function PostLostScreen() {
           style: "cancel",
         },
       ],
-      { cancelable: true }
+      { cancelable: true },
     );
   };
 
   const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Camera permission is required to take photos');
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission needed",
+        "Camera permission is required to take photos",
+      );
       return;
     }
 
@@ -88,8 +102,11 @@ export default function PostLostScreen() {
 
   const pickImageFromGallery = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Gallery permission is required to select photos');
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission needed",
+        "Gallery permission is required to select photos",
+      );
       return;
     }
 
@@ -101,7 +118,7 @@ export default function PostLostScreen() {
     });
 
     if (!result.canceled) {
-      const newImages = result.assets.map(asset => asset.uri);
+      const newImages = result.assets.map((asset) => asset.uri);
       setImages([...images, ...newImages].slice(0, 4));
     }
   };
@@ -110,11 +127,11 @@ export default function PostLostScreen() {
     setShowDatePicker(false);
     if (selectedDate) {
       setSelectedDate(selectedDate);
-      const formattedDate = selectedDate.toLocaleDateString('en-GB', {
-        day: '2-digit',
-        month: 'short',
-        year: 'numeric'
-      });
+      // Format as yyyy-MM-dd (required by API)
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, "0");
+      const day = String(selectedDate.getDate()).padStart(2, "0");
+      const formattedDate = `${year}-${month}-${day}`;
       setDate(formattedDate);
     }
   };
@@ -123,19 +140,46 @@ export default function PostLostScreen() {
     setShowTimePicker(false);
     if (selectedTime) {
       setSelectedTime(selectedTime);
-      const formattedTime = selectedTime.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      });
+      // Format as HH:mm 24-hour format (required by API)
+      const hours = String(selectedTime.getHours()).padStart(2, "0");
+      const minutes = String(selectedTime.getMinutes()).padStart(2, "0");
+      const formattedTime = `${hours}:${minutes}`;
       setTime(formattedTime);
     }
   };
 
   const handlePost = async () => {
-    // Validation
-    if (!itemName || !description || !location || !date || !category) {
-      Alert.alert("Error", "Please fill in all required fields");
+    // Validation - check all required fields according to API spec
+    if (!itemName.trim()) {
+      Alert.alert("Error", "Please enter item name");
+      return;
+    }
+    if (!itemColor.trim()) {
+      Alert.alert("Error", "Please enter item color");
+      return;
+    }
+    if (!description.trim()) {
+      Alert.alert("Error", "Please enter item description");
+      return;
+    }
+    if (!itemHighlight.trim()) {
+      Alert.alert("Error", "Please enter item highlight (unique features)");
+      return;
+    }
+    if (!venue.trim()) {
+      Alert.alert("Error", "Please enter venue/location");
+      return;
+    }
+    if (!date.trim()) {
+      Alert.alert("Error", "Please select a date");
+      return;
+    }
+    if (!category.trim()) {
+      Alert.alert("Error", "Please select item category");
+      return;
+    }
+    if (!postedBy.trim()) {
+      Alert.alert("Error", "Please enter your name");
       return;
     }
 
@@ -146,55 +190,44 @@ export default function PostLostScreen() {
       // Upload images first if any
       let uploadedImageUrls: string[] = [];
       if (images.length > 0) {
-        const uploadPromises = images.map(imageUri => 
-          uploadService.uploadImage(imageUri)
+        const uploadPromises = images.map((imageUri) =>
+          uploadService.uploadImage(imageUri),
         );
         const uploadResults = await Promise.all(uploadPromises);
-        uploadedImageUrls = uploadResults.map(result => result.data.url);
+        uploadedImageUrls = uploadResults.map((result) => result.data.url);
       }
 
-      // Create the lost item post
+      // Create the lost item post with exact API field names and formats
       const itemData = {
-        title: itemName,
-        description: description,
-        category: category,
-        type: 'lost' as const,
-        images: uploadedImageUrls,
-        location: {
-          address: venue || location,
-          city: location.split(',')[0]?.trim() || location,
-          state: location.split(',')[1]?.trim(),
-        },
-        date: selectedDate.toISOString(),
-        contactInfo: {
-          phone: postedBy || undefined,
-        },
+        itemName: itemName.trim(),
+        itemColor: itemColor.trim(),
+        itemDescription: description.trim(),
+        itemHighlight: itemHighlight.trim(),
+        time: time || undefined, // HH:mm format (24-hour)
+        date: date || undefined, // yyyy-MM-dd format
+        venue: venue.trim(),
+        postedBy: postedBy.trim(),
+        itemCategory: category,
+        itemImages: uploadedImageUrls,
       };
 
-      await itemsService.createItem(itemData);
+      await itemsService.postFoundItem(itemData);
 
-      Alert.alert(
-        "Success", 
-        "Lost item posted successfully!",
-        [
-          { 
-            text: "OK", 
-            onPress: () => router.back() 
-          }
-        ]
-      );
+      Alert.alert("Success", "Lost item posted successfully!", [
+        {
+          text: "OK",
+          onPress: () => router.back(),
+        },
+      ]);
     } catch (error: any) {
-      console.error('Error posting item:', error);
+      console.error("Error posting item:", error);
       if (error instanceof ApiError) {
         Alert.alert(
           "Error",
-          error.message || "Failed to post item. Please try again."
+          error.message || "Failed to post item. Please try again.",
         );
       } else {
-        Alert.alert(
-          "Error",
-          "An unexpected error occurred. Please try again."
-        );
+        Alert.alert("Error", "An unexpected error occurred. Please try again.");
       }
     } finally {
       setIsLoading(false);
@@ -230,14 +263,27 @@ export default function PostLostScreen() {
             {/* Image Upload */}
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Item Image*</Text>
-              <Pressable style={styles.imageUpload} onPress={showImagePickerOptions}>
-                <Ionicons name="cloud-upload-outline" size={48} color="rgba(255,255,255,0.6)" />
+              <Pressable
+                style={styles.imageUpload}
+                onPress={showImagePickerOptions}
+              >
+                <Ionicons
+                  name="cloud-upload-outline"
+                  size={48}
+                  color="rgba(255,255,255,0.6)"
+                />
                 <Text style={styles.uploadText}>Tap to select image</Text>
-                <Text style={styles.uploadText}>Take photo or choose from gallery</Text>
-                <Text style={styles.uploadHint}>Maximum 4 image, 10 MB each</Text>
+                <Text style={styles.uploadText}>
+                  Take photo or choose from gallery
+                </Text>
+                <Text style={styles.uploadHint}>
+                  Maximum 4 image, 10 MB each
+                </Text>
               </Pressable>
               {images.length > 0 && (
-                <Text style={styles.imageCount}>{images.length} image(s) selected</Text>
+                <Text style={styles.imageCount}>
+                  {images.length} image(s) selected
+                </Text>
               )}
             </View>
 
@@ -254,7 +300,7 @@ export default function PostLostScreen() {
             {/* Item Color */}
             <View style={styles.section}>
               <RoundedInput
-                label="Item Color"
+                label="Item Color*"
                 value={itemColor}
                 onChangeText={setItemColor}
                 placeholder="Enter item color"
@@ -277,7 +323,7 @@ export default function PostLostScreen() {
             {/* Item Highlight */}
             <View style={styles.section}>
               <RoundedInput
-                label="Item Highlight (Unique thing that show difference)"
+                label="Item Highlight (Unique features)*"
                 value={itemHighlight}
                 onChangeText={setItemHighlight}
                 placeholder="Any unique features or markings"
@@ -290,10 +336,16 @@ export default function PostLostScreen() {
             <View style={styles.section}>
               <Pressable onPress={() => setShowTimePicker(true)}>
                 <RoundedInput
-                  label="Time"
+                  label="Time (Format: HH:mm, 24-hour)"
                   value={time}
                   placeholder="What time did you lose it?"
-                  icon={<Ionicons name="time-outline" size={22} color={colors.primaryEnd} />}
+                  icon={
+                    <Ionicons
+                      name="time-outline"
+                      size={22}
+                      color={colors.primaryEnd}
+                    />
+                  }
                   editable={false}
                   pointerEvents="none"
                 />
@@ -302,7 +354,7 @@ export default function PostLostScreen() {
                 <DateTimePicker
                   value={selectedTime}
                   mode="time"
-                  is24Hour={false}
+                  is24Hour={true}
                   display="default"
                   onChange={onTimeChange}
                 />
@@ -313,10 +365,16 @@ export default function PostLostScreen() {
             <View style={styles.section}>
               <Pressable onPress={() => setShowDatePicker(true)}>
                 <RoundedInput
-                  label="Date*"
+                  label="Date* (Format: YYYY-MM-DD)"
                   value={date}
                   placeholder="When did you lose it?"
-                  icon={<Ionicons name="calendar-outline" size={22} color={colors.primaryEnd} />}
+                  icon={
+                    <Ionicons
+                      name="calendar-outline"
+                      size={22}
+                      color={colors.primaryEnd}
+                    />
+                  }
                   editable={false}
                   pointerEvents="none"
                 />
@@ -335,58 +393,56 @@ export default function PostLostScreen() {
             {/* Venue */}
             <View style={styles.section}>
               <RoundedInput
-                label="Venue"
+                label="Venue/Location*"
                 value={venue}
                 onChangeText={setVenue}
-                placeholder="Specific venue or building"
+                placeholder="Where did you lose it? (e.g., Library, Cafe)"
               />
             </View>
 
             {/* Posted By */}
             <View style={styles.section}>
               <RoundedInput
-                label="Posted By"
+                label="Your Name*"
                 value={postedBy}
                 onChangeText={setPostedBy}
-                placeholder="Your name"
+                placeholder="Your username"
+                editable={false}
+                helperText="Auto-filled from your account"
               />
             </View>
-
-            {/* Post Btn - Placeholder for future use */}
 
             {/* Item Category */}
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>Item Category*</Text>
               <View style={styles.categoryGrid}>
-                {['Electronics', 'Documents', 'Accessories', 'Clothing', 'Books', 'Others'].map((cat) => (
+                {[
+                  "Electronics",
+                  "Documents",
+                  "Accessories",
+                  "Clothing",
+                  "Books",
+                  "Others",
+                ].map((cat) => (
                   <Pressable
                     key={cat}
                     style={[
                       styles.categoryButton,
-                      category === cat && styles.categoryButtonActive
+                      category === cat && styles.categoryButtonActive,
                     ]}
                     onPress={() => setCategory(cat)}
                   >
-                    <Text style={[
-                      styles.categoryText,
-                      category === cat && styles.categoryTextActive
-                    ]}>
+                    <Text
+                      style={[
+                        styles.categoryText,
+                        category === cat && styles.categoryTextActive,
+                      ]}
+                    >
                       {cat}
                     </Text>
                   </Pressable>
                 ))}
               </View>
-            </View>
-
-            {/* Search By Item Name / Item Category */}
-            <View style={styles.section}>
-              <RoundedInput
-                label="Search By Item Name / Item Category"
-                value={location}
-                onChangeText={setLocation}
-                placeholder="Search items..."
-                icon={<Ionicons name="search-outline" size={22} color={colors.primaryEnd} />}
-              />
             </View>
 
             {/* Submit Button */}
@@ -401,7 +457,7 @@ export default function PostLostScreen() {
                 "Post lost item"
               )}
             </GradientButton>
-            
+
             {isLoading && uploadProgress > 0 && (
               <Text style={styles.progressText}>
                 Uploading images... {Math.round(uploadProgress)}%

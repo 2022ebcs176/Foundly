@@ -3,12 +3,12 @@
  * Handles found/lost items operations
  */
 
-import { API_ENDPOINTS } from '../constants/api';
-import type { CreateFoundItemRequest, FoundItem } from '../types/api.types';
-import { api } from '../utils/api';
+import { API_ENDPOINTS } from "../constants/api";
+import type { CreateFoundItemRequest, FoundItem } from "../types/api.types";
+import { api } from "../utils/api";
 
 export interface GetItemsParams {
-  type?: 'lost' | 'found';
+  type?: "lost" | "found";
   category?: string;
   search?: string;
 }
@@ -25,18 +25,21 @@ export interface GetItemsResponse {
 /**
  * Get all items with optional filters
  */
-export async function getAllItems(params?: GetItemsParams): Promise<GetItemsResponse> {
+export async function getAllItems(
+  params?: GetItemsParams,
+): Promise<GetItemsResponse> {
   try {
     // Build query string
     const queryParams = new URLSearchParams();
-    
+
     if (params?.search) {
       // Use search endpoint if search query exists
-      queryParams.append('query', params.search);
+      // API expects 'name' parameter for item name search
+      queryParams.append("name", params.search);
       const items = await api.get<FoundItem[]>(
-        `${API_ENDPOINTS.foundItems.search}?${queryParams.toString()}`
+        `${API_ENDPOINTS.foundItems.search}?${queryParams.toString()}`,
       );
-      
+
       return {
         success: true,
         data: {
@@ -45,19 +48,20 @@ export async function getAllItems(params?: GetItemsParams): Promise<GetItemsResp
         },
       };
     }
-    
+
     // Otherwise get all items
     const items = await api.get<FoundItem[]>(API_ENDPOINTS.foundItems.getAll);
-    
+
     // Apply client-side filtering for type and category
     let filteredItems = items;
-    
+
     if (params?.category) {
-      filteredItems = filteredItems.filter(item => 
-        item.itemCategory.toLowerCase() === params.category?.toLowerCase()
+      filteredItems = filteredItems.filter(
+        (item) =>
+          item.itemCategory.toLowerCase() === params.category?.toLowerCase(),
       );
     }
-    
+
     return {
       success: true,
       data: {
@@ -66,10 +70,10 @@ export async function getAllItems(params?: GetItemsParams): Promise<GetItemsResp
       },
     };
   } catch (error) {
-    console.error('Error fetching items:', error);
+    console.error("Error fetching items:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to fetch items',
+      message: error instanceof Error ? error.message : "Failed to fetch items",
     };
   }
 }
@@ -77,12 +81,14 @@ export async function getAllItems(params?: GetItemsParams): Promise<GetItemsResp
 /**
  * Get items posted by a specific user
  */
-export async function getItemsByUser(username: string): Promise<GetItemsResponse> {
+export async function getItemsByUser(
+  username: string,
+): Promise<GetItemsResponse> {
   try {
     const items = await api.get<FoundItem[]>(
-      API_ENDPOINTS.foundItems.getByUser(username)
+      API_ENDPOINTS.foundItems.getByUser(username),
     );
-    
+
     return {
       success: true,
       data: {
@@ -91,10 +97,11 @@ export async function getItemsByUser(username: string): Promise<GetItemsResponse
       },
     };
   } catch (error) {
-    console.error('Error fetching user items:', error);
+    console.error("Error fetching user items:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to fetch user items',
+      message:
+        error instanceof Error ? error.message : "Failed to fetch user items",
     };
   }
 }
@@ -108,20 +115,17 @@ export async function postFoundItem(data: CreateFoundItemRequest): Promise<{
   message?: string;
 }> {
   try {
-    const item = await api.post<FoundItem>(
-      API_ENDPOINTS.foundItems.post,
-      data
-    );
-    
+    const item = await api.post<FoundItem>(API_ENDPOINTS.foundItems.post, data);
+
     return {
       success: true,
       data: item,
     };
   } catch (error) {
-    console.error('Error posting item:', error);
+    console.error("Error posting item:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to post item',
+      message: error instanceof Error ? error.message : "Failed to post item",
     };
   }
 }
@@ -148,18 +152,19 @@ export async function getCategories(): Promise<{
 }> {
   try {
     const categories = await api.get<string[]>(
-      API_ENDPOINTS.foundItems.getCategories
+      API_ENDPOINTS.foundItems.getCategories,
     );
-    
+
     return {
       success: true,
       data: categories,
     };
   } catch (error) {
-    console.error('Error fetching categories:', error);
+    console.error("Error fetching categories:", error);
     return {
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to fetch categories',
+      message:
+        error instanceof Error ? error.message : "Failed to fetch categories",
     };
   }
 }

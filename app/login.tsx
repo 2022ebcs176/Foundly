@@ -4,24 +4,26 @@ import { Link, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Image,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { GradientButton } from "../components/GradientButton";
 import { RoundedInput } from "../components/RoundedInput";
 import { colors } from "../constants/colors";
+import { useAuth } from "../contexts/AuthContext";
 import { authService } from "../services/auth.service";
 import { ApiError } from "../utils/api";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -58,13 +60,16 @@ export default function LoginScreen() {
 
     try {
       setIsLoading(true);
-      
+
       // Call the real backend API
-      const user = await authService.login({ 
-        email: email.trim(), 
-        password 
+      const user = await authService.login({
+        email: email.trim(),
+        password,
       });
-      
+
+      // Update AuthContext with logged-in user
+      await login(user);
+
       // Login successful - navigate to home
       router.replace("/home");
     } catch (error: any) {
@@ -72,13 +77,13 @@ export default function LoginScreen() {
         Alert.alert(
           "Login Failed",
           error.message || "Invalid email or password. Please try again.",
-          [{ text: "OK" }]
+          [{ text: "OK" }],
         );
       } else {
         Alert.alert(
           "Login Failed",
           "An unexpected error occurred. Please try again.",
-          [{ text: "OK" }]
+          [{ text: "OK" }],
         );
       }
     } finally {
@@ -87,7 +92,10 @@ export default function LoginScreen() {
   };
 
   return (
-    <LinearGradient colors={[colors.primaryStart, colors.primaryEnd]} style={styles.container}>
+    <LinearGradient
+      colors={[colors.primaryStart, colors.primaryEnd]}
+      style={styles.container}
+    >
       <StatusBar style="light" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -100,7 +108,10 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.hero}>
-            <Image source={require("../assets/images/splash-icon.png")} style={styles.crest} />
+            <Image
+              source={require("../assets/images/splash-icon.png")}
+              style={styles.crest}
+            />
             <Text style={styles.heroTitle}>Login</Text>
           </View>
 
@@ -114,11 +125,19 @@ export default function LoginScreen() {
               }}
               keyboardType="email-address"
               autoCapitalize="none"
-              icon={<Ionicons name="mail-outline" size={22} color={colors.primaryEnd} />}
+              icon={
+                <Ionicons
+                  name="mail-outline"
+                  size={22}
+                  color={colors.primaryEnd}
+                />
+              }
               placeholder="your.email@example.com"
               editable={!isLoading}
             />
-            {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+            {errors.email ? (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            ) : null}
             <RoundedInput
               label="Password"
               value={password}
@@ -127,12 +146,20 @@ export default function LoginScreen() {
                 setErrors({ ...errors, password: "" });
               }}
               secureTextEntry
-              icon={<Ionicons name="lock-closed-outline" size={22} color={colors.primaryEnd} />}
+              icon={
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={22}
+                  color={colors.primaryEnd}
+                />
+              }
               placeholder="********"
               editable={!isLoading}
             />
-            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
-            
+            {errors.password ? (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            ) : null}
+
             <GradientButton
               containerStyle={styles.buttonSpacing}
               onPress={handleLogin}
@@ -147,7 +174,10 @@ export default function LoginScreen() {
           </View>
 
           <Text style={styles.footerText}>
-            Don’t have any account? <Link href="/register" style={styles.footerLink}>Sign up</Link>
+            Don’t have any account?{" "}
+            <Link href="/register" style={styles.footerLink}>
+              Sign up
+            </Link>
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

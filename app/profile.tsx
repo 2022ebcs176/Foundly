@@ -4,26 +4,30 @@ import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    View
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientButton } from "../components/GradientButton";
+import { ItemCard } from "../components/ItemCard";
 import { colors } from "../constants/colors";
 import { useAuth } from "../contexts/AuthContext";
 import * as userService from "../services/user.service";
+import type { FoundItem } from "../types/api.types";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout: authLogout, isLoading: authLoading } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [userPosts, setUserPosts] = useState<any[]>([]);
+  const [userPosts, setUserPosts] = useState<FoundItem[]>([]);
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+  const [activeTab, setActiveTab] = useState<"info" | "posts">("info");
 
   // Fetch user posts on mount
   useEffect(() => {
@@ -38,7 +42,7 @@ export default function ProfileScreen() {
         setUserPosts(response.data.items);
       }
     } catch (error) {
-      console.error('Error fetching user posts:', error);
+      console.error("Error fetching user posts:", error);
       // Silently fail, not critical for profile view
     } finally {
       setIsLoadingPosts(false);
@@ -46,24 +50,38 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { 
-          text: "Logout", 
-          style: "destructive", 
-          onPress: async () => {
-            try {
-              await authLogout();
-            } catch (error) {
-              console.error('Logout error:', error);
-            }
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await authLogout();
+            router.replace("/login");
+          } catch (error) {
+            console.error("Logout error:", error);
+            Alert.alert("Error", "Failed to logout. Please try again.");
           }
-        }
-      ]
-    );
+        },
+      },
+    ]);
+  };
+
+  // Helper function to format time ago
+  const getTimeAgo = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return `${Math.floor(days / 7)}w ago`;
   };
 
   return (
@@ -80,132 +98,214 @@ export default function ProfileScreen() {
         <View style={styles.placeholder} />
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Profile Info Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={48} color={colors.accent} />
+      {activeTab === "info" ? (
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Profile Info Card */}
+          <View style={styles.profileCard}>
+            <View style={styles.avatarContainer}>
+              <View style={styles.avatar}>
+                <Ionicons name="person" size={48} color={colors.accent} />
+              </View>
             </View>
-            <Pressable style={styles.editAvatarButton}>
-              <Ionicons name="camera" size={18} color={colors.surface} />
+            <Text style={styles.userName}>{user?.username || "User"}</Text>
+            <Text style={styles.userEmail}>
+              {user?.email || "email@example.com"}
+            </Text>
+            <Text style={styles.userStats}>
+              {isLoadingPosts ? (
+                <ActivityIndicator size="small" color={colors.accent} />
+              ) : (
+                <>
+                  <Text style={styles.statNumber}>{userPosts.length}</Text>{" "}
+                  Items Posted
+                </>
+              )}
+            </Text>
+          </View>
+
+          {/* Preferences */}
+          <View style={styles.menuSection}>
+            <Text style={styles.sectionTitle}>Preferences</Text>
+
+            <Pressable
+              style={styles.menuItem}
+              onPress={() => {
+                setNotificationsEnabled(!notificationsEnabled);
+              }}
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons
+                  name="notifications-outline"
+                  size={22}
+                  color={colors.accent}
+                />
+                <Text style={styles.menuItemText}>Push Notifications</Text>
+              </View>
+              <View
+                style={[
+                  styles.toggle,
+                  notificationsEnabled && styles.toggleActive,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.toggleThumb,
+                    notificationsEnabled && styles.toggleThumbActive,
+                  ]}
+                />
+              </View>
             </Pressable>
           </View>
-          <Text style={styles.userName}>{user?.name || "User"}</Text>
-          <Text style={styles.userEmail}>{user?.email || "email@example.com"}</Text>
-          <Text style={styles.userStats}>
-            {isLoadingPosts ? (
-              <ActivityIndicator size="small" color={colors.accent} />
-            ) : (
-              <>
-                <Text style={styles.statNumber}>{userPosts.length}</Text> Items Posted
-              </>
-            )}
-          </Text>
-        </View>
 
-        {/* Menu Items */}
-        <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>Account</Text>
-          
-          <Pressable style={styles.menuItem} onPress={() => Alert.alert("Edit Profile", "This feature will allow you to edit your profile")}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="person-outline" size={22} color={colors.accent} />
-              <Text style={styles.menuItemText}>Edit Profile</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </Pressable>
+          {/* About */}
+          <View style={styles.menuSection}>
+            <Text style={styles.sectionTitle}>About</Text>
 
-          <Pressable style={styles.menuItem} onPress={() => Alert.alert("My Posts", "View all your posted items")}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="albums-outline" size={22} color={colors.accent} />
-              <Text style={styles.menuItemText}>My Posts</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </Pressable>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() =>
+                Alert.alert(
+                  "Help & Support",
+                  "Contact us at: support@foundly.com",
+                )
+              }
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons
+                  name="help-circle-outline"
+                  size={22}
+                  color={colors.accent}
+                />
+                <Text style={styles.menuItemText}>Help & Support</Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textSecondary}
+              />
+            </Pressable>
 
-          <Pressable style={styles.menuItem} onPress={() => Alert.alert("Saved Items", "View your bookmarked items")}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="bookmark-outline" size={22} color={colors.accent} />
-              <Text style={styles.menuItemText}>Saved Items</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </Pressable>
-        </View>
+            <Pressable
+              style={styles.menuItem}
+              onPress={() =>
+                Alert.alert("About", "Foundly v1.0.0\nLost & Found App")
+              }
+            >
+              <View style={styles.menuItemLeft}>
+                <Ionicons
+                  name="information-circle-outline"
+                  size={22}
+                  color={colors.accent}
+                />
+                <Text style={styles.menuItemText}>About Foundly</Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={colors.textSecondary}
+              />
+            </Pressable>
+          </View>
 
-        {/* Preferences */}
-        <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-          
-          <Pressable 
-            style={styles.menuItem}
-            onPress={() => {
-              setNotificationsEnabled(!notificationsEnabled);
-              Alert.alert("Notifications", `Notifications ${!notificationsEnabled ? "enabled" : "disabled"}`);
-            }}
+          {/* Logout Button */}
+          <GradientButton
+            containerStyle={styles.logoutButton}
+            onPress={handleLogout}
+            disabled={authLoading}
           >
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="notifications-outline" size={22} color={colors.accent} />
-              <Text style={styles.menuItemText}>Push Notifications</Text>
-            </View>
-            <View style={[styles.toggle, notificationsEnabled && styles.toggleActive]}>
-              <View style={[styles.toggleThumb, notificationsEnabled && styles.toggleThumbActive]} />
-            </View>
-          </Pressable>
+            {authLoading ? (
+              <ActivityIndicator color={colors.surface} />
+            ) : (
+              "Logout"
+            )}
+          </GradientButton>
 
-          <Pressable style={styles.menuItem} onPress={() => Alert.alert("Location", "Manage your location preferences")}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="location-outline" size={22} color={colors.accent} />
-              <Text style={styles.menuItemText}>Location Services</Text>
+          <Text style={styles.version}>Version 1.0.0</Text>
+        </ScrollView>
+      ) : (
+        <View style={styles.postsContainer}>
+          {isLoadingPosts ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.accent} />
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </Pressable>
-        </View>
-
-        {/* About */}
-        <View style={styles.menuSection}>
-          <Text style={styles.sectionTitle}>About</Text>
-          
-          <Pressable style={styles.menuItem} onPress={() => Alert.alert("Help & Support", "Contact us at: support@foundly.com")}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="help-circle-outline" size={22} color={colors.accent} />
-              <Text style={styles.menuItemText}>Help & Support</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </Pressable>
-
-          <Pressable style={styles.menuItem} onPress={() => Alert.alert("Privacy Policy", "View our privacy policy and terms")}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="shield-checkmark-outline" size={22} color={colors.accent} />
-              <Text style={styles.menuItemText}>Privacy Policy</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </Pressable>
-
-          <Pressable style={styles.menuItem} onPress={() => Alert.alert("About", "Foundly v1.0.0\nLost & Found App")}>
-            <View style={styles.menuItemLeft}>
-              <Ionicons name="information-circle-outline" size={22} color={colors.accent} />
-              <Text style={styles.menuItemText}>About Foundly</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
-          </Pressable>
-        </View>
-
-        {/* Logout Button */}
-        <GradientButton
-          containerStyle={styles.logoutButton}
-          onPress={handleLogout}
-          disabled={authLoading}
-        >
-          {authLoading ? (
-            <ActivityIndicator color={colors.surface} />
+          ) : userPosts.length > 0 ? (
+            <FlatList
+              data={userPosts}
+              keyExtractor={(item) => item.id.toString()}
+              contentContainerStyle={styles.postsList}
+              renderItem={({ item }) => (
+                <ItemCard
+                  title={item.itemName}
+                  description={item.itemDescription}
+                  location={item.venue}
+                  timeAgo={getTimeAgo(item.date)}
+                  type="found"
+                  image={
+                    item.itemImages && item.itemImages.length > 0
+                      ? item.itemImages[0]
+                      : require("../assets/images/icon.png")
+                  }
+                  onPress={() => {
+                    router.push(`/item-detail?id=${item.id}`);
+                  }}
+                />
+              )}
+            />
           ) : (
-            "Logout"
+            <View style={styles.emptyState}>
+              <Ionicons
+                name="documents-outline"
+                size={64}
+                color={colors.textLight}
+              />
+              <Text style={styles.emptyText}>No posts yet</Text>
+              <Text style={styles.emptySubtext}>
+                Start by posting a found or lost item
+              </Text>
+            </View>
           )}
-        </GradientButton>
+        </View>
+      )}
 
-        <Text style={styles.version}>Version 1.0.0</Text>
-      </ScrollView>
+      {/* Tab Bar */}
+      <View style={styles.tabBar}>
+        <Pressable
+          style={[styles.tab, activeTab === "info" && styles.tabActive]}
+          onPress={() => setActiveTab("info")}
+        >
+          <Ionicons
+            name="person"
+            size={24}
+            color={activeTab === "info" ? colors.accent : colors.textSecondary}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "info" && styles.tabTextActive,
+            ]}
+          >
+            Info
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.tab, activeTab === "posts" && styles.tabActive]}
+          onPress={() => setActiveTab("posts")}
+        >
+          <Ionicons
+            name="list"
+            size={24}
+            color={activeTab === "posts" ? colors.accent : colors.textSecondary}
+          />
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "posts" && styles.tabTextActive,
+            ]}
+          >
+            My Posts
+          </Text>
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 }
@@ -235,6 +335,37 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    paddingBottom: 70,
+  },
+  postsContainer: {
+    flex: 1,
+    paddingBottom: 70,
+  },
+  postsList: {
+    paddingVertical: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  emptyText: {
+    fontSize: 18,
+    fontFamily: "Poppins_600SemiBold",
+    color: colors.textPrimary,
+    marginTop: 16,
+  },
+  emptySubtext: {
+    fontSize: 14,
+    fontFamily: "Poppins_400Regular",
+    color: colors.textSecondary,
+    marginTop: 8,
   },
   profileCard: {
     backgroundColor: colors.surface,
@@ -262,19 +393,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 3,
     borderColor: colors.accent,
-  },
-  editAvatarButton: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.accent,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-    borderColor: colors.surface,
   },
   userName: {
     fontSize: 22,
@@ -368,5 +486,35 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_400Regular",
     color: colors.textLight,
     marginBottom: 32,
+  },
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  tab: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 8,
+  },
+  tabActive: {
+    borderBottomWidth: 2,
+    borderBottomColor: colors.accent,
+  },
+  tabText: {
+    fontSize: 12,
+    fontFamily: "Poppins_500Medium",
+    color: colors.textSecondary,
+    marginTop: 4,
+  },
+  tabTextActive: {
+    color: colors.accent,
   },
 });

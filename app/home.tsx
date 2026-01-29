@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -12,155 +12,305 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CategoryPill } from "../components/CategoryPill";
 import { FloatingActionMenu } from "../components/FloatingActionMenu";
 import { ItemCard } from "../components/ItemCard";
 import { colors } from "../constants/colors";
-import { CATEGORIES, MOCK_ITEMS } from "../constants/mockData";
 import * as itemsService from "../services/items.service";
-import type { Item } from "../types/api.types";
-import { ApiError } from "../utils/api";
+import * as userService from "../services/user.service";
+import type { FoundItem } from "../types/api.types";
 
 export default function HomeScreen() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showMenu, setShowMenu] = useState(false);
-  const [showLocationModal, setShowLocationModal] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
-  const [selectedLocation, setSelectedLocation] = useState("Bhubaneswar, Odisha");
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "lost" | "found">("all");
-  const [items, setItems] = useState<Item[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState<
+    "all" | "lost" | "found"
+  >("all");
+  const [activeTab, setActiveTab] = useState<"all" | "my">("all");
+  const [allItems, setAllItems] = useState<FoundItem[]>([]);
+  const [myItems, setMyItems] = useState<FoundItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [useApi, setUseApi] = useState(true); // Toggle between API and mock data
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch items from API
-  const fetchItems = useCallback(async () => {
-    if (!useApi) {
-      // Use mock data as fallback
-      setItems(MOCK_ITEMS as any);
-      setIsLoading(false);
-      return;
-    }
-
+  // Fetch all items from API
+  const fetchAllItems = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await itemsService.getAllItems({
         type: selectedFilter !== "all" ? selectedFilter : undefined,
-        category: selectedCategory || undefined,
         search: searchQuery || undefined,
       });
-      
+
       if (response.success && response.data) {
-        setItems(response.data.items);
+        setAllItems(response.data.items);
+      } else {
+        Alert.alert("Error", response.message || "Failed to fetch items");
       }
     } catch (error: any) {
       console.error("Error fetching items:", error);
-      
-      // Fallback to mock data if API fails
-      if (error instanceof ApiError) {
-        console.log("API not available, using mock data");
-        setItems(MOCK_ITEMS as any);
-        setUseApi(false);
-      } else {
-        Alert.alert("Error", "Failed to load items. Showing cached data.");
-        setItems(MOCK_ITEMS as any);
-      }
+      Alert.alert("Error", "Failed to load items. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [selectedFilter, selectedCategory, searchQuery, useApi]);
+  }, [selectedFilter, searchQuery]);
 
-  // Refresh items
+  // Fetch user's own items
+  const fetchMyItems = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await userService.getUserPosts();
+
+      if (response.success && response.data) {
+        setMyItems(response.data.items);
+      } else {
+        Alert.alert("Error", response.message || "Failed to fetch your items");
+      }
+    } catch (error: any) {
+      console.error("Error fetching my items:", error);
+      Alert.alert("Error", "Failed to load your items. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Refresh items based on active tab
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await fetchItems();
+    if (activeTab === "all") {
+      await fetchAllItems();
+    } else {
+      await fetchMyItems();
+    }
     setIsRefreshing(false);
-  }, [fetchItems]);
+  }, [activeTab, fetchAllItems, fetchMyItems]);
 
   // Load items on mount and when filters change
   useEffect(() => {
-    fetchItems();
-  }, [selectedFilter, selectedCategory]);
+    if (activeTab === "all") {
+      fetchAllItems();
+    } else {
+      fetchMyItems();
+    }
+  }, [activeTab, selectedFilter]);
 
-  // Filter items locally if using mock data or for immediate feedback
-  const filteredItems = items.filter(item => {
-    const matchesSearch = !searchQuery || item.title.toLowerCase().indexOf(searchQuery.toLowerCase()) !== -1;
-    const matchesCategory = !selectedCategory || item.category === selectedCategory;
-    const matchesFilter = selectedFilter === "all" || item.type === selectedFilter;
-    return matchesSearch && matchesCategory && matchesFilter;
-  });
+  // Handle search with API - debounced
+  useEffect(() => {
+    // Clear existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
 
-  // Handle search query change with alert for no results
+    // If no search query, just load all items
+    if (!searchQuery.trim()) {
+      if (activeTab === "all") {
+        fetchAllItems();
+      }
+      return;
+    }
+
+    // Debounce search requests (wait 500ms after user stops typing)
+    searchTimeoutRef.current = setTimeout(async () => {
+      if (activeTab === "all" && searchQuery.trim()) {
+        try {
+          setIsLoading(true);
+          const response = await itemsService.getAllItems({
+            type: selectedFilter !== "all" ? selectedFilter : undefined,
+            search: searchQuery.trim(),
+          });
+          if (response.success && response.data) {
+            setAllItems(response.data.items);
+          }
+        } catch (error) {
+          console.error("Error searching items:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    }, 500);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, [searchQuery, activeTab, selectedFilter]);
+
+  // Get items to display based on active tab
+  const items = activeTab === "all" ? allItems : myItems;
+
+  // For "My Items" tab, filter locally by search
+  const filteredItems =
+    activeTab === "my"
+      ? items.filter((item) => {
+          const matchesSearch =
+            !searchQuery ||
+            item.itemName.toLowerCase().indexOf(searchQuery.toLowerCase()) !==
+              -1;
+          return matchesSearch;
+        })
+      : items; // "All Items" uses API search, no local filtering needed
+
+  // Handle search query change
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
-    
-    // Trigger search after user stops typing (debounced)
-    if (text.length >= 3) {
-      fetchItems();
-    } else if (text.length === 0) {
-      fetchItems();
+  };
+
+  // Helper function to format time ago with proper date parsing
+  const getTimeAgo = (dateString: string, timeString?: string): string => {
+    try {
+      // Parse date string (format: yyyy-MM-dd or ISO format)
+      let date: Date;
+
+      if (!dateString) {
+        return "Unknown";
+      }
+
+      // Try to parse the date string
+      if (dateString.includes("T")) {
+        // ISO format with time
+        date = new Date(dateString);
+      } else {
+        // Date only format (yyyy-MM-dd)
+        const [year, month, day] = dateString.split("-");
+        if (year && month && day) {
+          // Create date in UTC to avoid timezone issues
+          // Use Date.UTC to get timestamp, then create Date object
+          date = new Date(
+            Date.UTC(
+              parseInt(year),
+              parseInt(month) - 1,
+              parseInt(day),
+              0,
+              0,
+              0,
+            ),
+          );
+        } else {
+          date = new Date(dateString);
+        }
+      }
+
+      if (isNaN(date.getTime())) {
+        return dateString; // Return original string if parsing fails
+      }
+
+      const now = new Date();
+      const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+      // If negative (future date), show the date
+      if (seconds < 0) {
+        const day = date.getDate().toString().padStart(2, "0");
+        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      // If more than 7 days ago, show the actual date instead of "time ago"
+      if (seconds > 604800) {
+        // 7 days in seconds
+        const day = date.getDate().toString().padStart(2, "0");
+        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+      }
+
+      if (seconds < 60) return `${seconds}s ago`;
+      const minutes = Math.floor(seconds / 60);
+      if (minutes < 60) return `${minutes}m ago`;
+      const hours = Math.floor(minutes / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      if (days < 7) return `${days}d ago`;
+
+      return "1w ago";
+    } catch (error) {
+      console.error("Error parsing date:", dateString, error);
+      return dateString || "Unknown";
     }
   };
 
-  // Helper function to format time ago
-  const getTimeAgo = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  // Helper function to format date for display in details
+  const formatDate = (dateString: string): string => {
+    try {
+      if (!dateString) return "Unknown";
 
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    const weeks = Math.floor(days / 7);
-    if (weeks < 4) return `${weeks}w ago`;
-    const months = Math.floor(days / 30);
-    return `${months}mo ago`;
-  };
-
-  // Helper function to get location string
-  const getLocationString = (location: any): string => {
-    if (typeof location === 'string') return location;
-    if (location?.city && location?.state) return `${location.city}, ${location.state}`;
-    if (location?.city) return location.city;
-    if (location?.address) return location.address;
-    return "Unknown location";
+      const [year, month, day] = dateString.split("-");
+      if (year && month && day) {
+        const date = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+        );
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+      return dateString;
+    } catch {
+      return dateString;
+    }
   };
 
   // Helper function to get image source
-  const getImageSource = (item: Item): any => {
-    // For mock data compatibility
-    if (item.image) {
-      return item.image;
+  const getImageSource = (item: FoundItem): any => {
+    // For API data
+    if (item.itemImages && item.itemImages.length > 0) {
+      return item.itemImages[0];
     }
     // Fallback to default image
     return require("../assets/images/icon.png");
   };
 
-  const locations = ["Mumbai, Maharashtra", "Delhi, NCR", "Bangalore, Karnataka", "Bhubaneswar, Odisha", "Hyderabad, Telangana", "Chennai, Tamil Nadu", "Kolkata, West Bengal", "Pune, Maharashtra"];
-  const sortOptions = ["Recent", "Oldest", "Nearby"];
-
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar style="dark" />
-      
+
       {/* Header */}
       <View style={styles.header}>
-        <Pressable style={styles.locationRow} onPress={() => setShowLocationModal(true)}>
-          <Ionicons name="location-sharp" size={20} color={colors.accent} />
-          <Text style={styles.locationText}>{selectedLocation}</Text>
-          <Ionicons name="chevron-down" size={20} color={colors.textSecondary} />
+        <Text style={styles.headerTitle}>Foundly</Text>
+        <Pressable
+          style={styles.profileButton}
+          onPress={() => router.push("/profile")}
+        >
+          <Ionicons
+            name="person-circle-outline"
+            size={32}
+            color={colors.textSecondary}
+          />
         </Pressable>
-        <Pressable style={styles.profileButton} onPress={() => router.push("/profile")}>
-          <Ionicons name="person-circle-outline" size={32} color={colors.textSecondary} />
+      </View>
+
+      {/* Tabs */}
+      <View style={styles.tabBar}>
+        <Pressable
+          style={[styles.tab, activeTab === "all" && styles.tabActive]}
+          onPress={() => setActiveTab("all")}
+        >
+          <Text
+            style={[
+              styles.tabText,
+              activeTab === "all" && styles.tabTextActive,
+            ]}
+          >
+            All Items
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.tab, activeTab === "my" && styles.tabActive]}
+          onPress={() => setActiveTab("my")}
+        >
+          <Text
+            style={[styles.tabText, activeTab === "my" && styles.tabTextActive]}
+          >
+            My Items
+          </Text>
         </Pressable>
       </View>
 
@@ -176,33 +326,18 @@ export default function HomeScreen() {
             onChangeText={handleSearchChange}
           />
         </View>
-        <Pressable style={styles.filterButton} onPress={() => setShowFilterModal(true)}>
+        <Pressable
+          style={styles.filterButton}
+          onPress={() => setShowFilterModal(true)}
+        >
           <Ionicons name="options-outline" size={24} color={colors.accent} />
         </Pressable>
-      </View>
-
-      {/* Categories */}
-      <View style={styles.categoriesContainer}>
-        <FlatList
-          horizontal
-          data={CATEGORIES}
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item}
-          contentContainerStyle={styles.categoriesList}
-          renderItem={({ item }) => (
-            <CategoryPill
-              label={item}
-              selected={selectedCategory === item}
-              onPress={() => setSelectedCategory(selectedCategory === item ? null : item)}
-            />
-          )}
-        />
       </View>
 
       {/* Items Feed */}
       <FlatList
         data={filteredItems}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id.toString()}
         contentContainerStyle={styles.feedList}
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -215,11 +350,11 @@ export default function HomeScreen() {
         }
         renderItem={({ item }) => (
           <ItemCard
-            title={item.title}
-            description={item.description}
-            location={getLocationString(item.location)}
-            timeAgo={item.timeAgo || getTimeAgo(item.date)}
-            type={item.type as "lost" | "found"}
+            title={item.itemName}
+            description={item.itemDescription}
+            location={item.venue}
+            timeAgo={getTimeAgo(item.date)}
+            type="found"
             image={getImageSource(item)}
             onPress={() => {
               router.push(`/item-detail?id=${item.id}`);
@@ -234,7 +369,11 @@ export default function HomeScreen() {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="search-outline" size={64} color={colors.textLight} />
+              <Ionicons
+                name="search-outline"
+                size={64}
+                color={colors.textLight}
+              />
               <Text style={styles.emptyText}>No items found</Text>
             </View>
           )
@@ -255,47 +394,6 @@ export default function HomeScreen() {
         }}
       />
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <Pressable style={styles.navItem}>
-          <Ionicons name="home" size={28} color={colors.textPrimary} />
-        </Pressable>
-        <View style={styles.navSpacer} />
-        <Pressable style={styles.navItem} onPress={() => router.push("/profile")}>
-          <Ionicons name="person-outline" size={28} color={colors.iconGray} />
-        </Pressable>
-      </View>
-
-      {/* Location Modal */}
-      <Modal
-        visible={showLocationModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowLocationModal(false)}
-      >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowLocationModal(false)}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Select Location</Text>
-            {locations.map((location) => (
-              <Pressable
-                key={location}
-                style={styles.modalItem}
-                onPress={() => {
-                  setSelectedLocation(location);
-                  setShowLocationModal(false);
-                }}
-              >
-                <Text style={styles.modalItemText}>{location}</Text>
-                {selectedLocation === location && (
-                  <Ionicons name="checkmark" size={24} color={colors.accent} />
-                )}
-              </Pressable>
-            ))}
-          </View>
-        </Pressable>
-      </Modal>
-
       {/* Filter Modal */}
       <Modal
         visible={showFilterModal}
@@ -303,54 +401,66 @@ export default function HomeScreen() {
         animationType="slide"
         onRequestClose={() => setShowFilterModal(false)}
       >
-        <Pressable style={styles.modalOverlay} onPress={() => setShowFilterModal(false)}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowFilterModal(false)}
+        >
           <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Filter & Sort</Text>
-            
+            <Text style={styles.modalTitle}>Filter</Text>
+
             {/* Filter by Type */}
             <Text style={styles.filterSectionTitle}>Show Items</Text>
             <View style={styles.filterRow}>
               <Pressable
-                style={[styles.filterChip, selectedFilter === "all" && styles.filterChipActive]}
+                style={[
+                  styles.filterChip,
+                  selectedFilter === "all" && styles.filterChipActive,
+                ]}
                 onPress={() => setSelectedFilter("all")}
               >
-                <Text style={[styles.filterChipText, selectedFilter === "all" && styles.filterChipTextActive]}>
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    selectedFilter === "all" && styles.filterChipTextActive,
+                  ]}
+                >
                   All
                 </Text>
               </Pressable>
               <Pressable
-                style={[styles.filterChip, selectedFilter === "lost" && styles.filterChipActive]}
+                style={[
+                  styles.filterChip,
+                  selectedFilter === "lost" && styles.filterChipActive,
+                ]}
                 onPress={() => setSelectedFilter("lost")}
               >
-                <Text style={[styles.filterChipText, selectedFilter === "lost" && styles.filterChipTextActive]}>
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    selectedFilter === "lost" && styles.filterChipTextActive,
+                  ]}
+                >
                   Lost Only
                 </Text>
               </Pressable>
               <Pressable
-                style={[styles.filterChip, selectedFilter === "found" && styles.filterChipActive]}
+                style={[
+                  styles.filterChip,
+                  selectedFilter === "found" && styles.filterChipActive,
+                ]}
                 onPress={() => setSelectedFilter("found")}
               >
-                <Text style={[styles.filterChipText, selectedFilter === "found" && styles.filterChipTextActive]}>
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    selectedFilter === "found" && styles.filterChipTextActive,
+                  ]}
+                >
                   Found Only
                 </Text>
               </Pressable>
             </View>
-
-            {/* Sort Options */}
-            <Text style={styles.filterSectionTitle}>Sort By</Text>
-            {sortOptions.map((option) => (
-              <Pressable
-                key={option}
-                style={styles.modalItem}
-                onPress={() => {
-                  Alert.alert("Sort", `Sorting by ${option}`);
-                  setShowFilterModal(false);
-                }}
-              >
-                <Text style={styles.modalItemText}>{option}</Text>
-              </Pressable>
-            ))}
 
             <Pressable
               style={styles.applyButton}
@@ -377,18 +487,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  locationText: {
-    fontSize: 16,
-    fontFamily: "Poppins_500Medium",
+  headerTitle: {
+    fontSize: 24,
+    fontFamily: "Poppins_600SemiBold",
     color: colors.textPrimary,
   },
   profileButton: {
     padding: 4,
+  },
+  tabBar: {
+    flexDirection: "row",
+    backgroundColor: colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    marginTop: 8,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: "center",
+    borderBottomWidth: 2,
+    borderBottomColor: "transparent",
+  },
+  tabActive: {
+    borderBottomColor: colors.accent,
+  },
+  tabText: {
+    fontSize: 14,
+    fontFamily: "Poppins_500Medium",
+    color: colors.textSecondary,
+  },
+  tabTextActive: {
+    color: colors.accent,
   },
   searchContainer: {
     flexDirection: "row",
@@ -464,32 +594,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Poppins_400Regular",
     color: colors.textSecondary,
-  },
-  bottomNav: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    backgroundColor: colors.surface,
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 10,
-  },
-  navItem: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
-  },
-  navSpacer: {
-    width: 80,
   },
   modalOverlay: {
     flex: 1,
