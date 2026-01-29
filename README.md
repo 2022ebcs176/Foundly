@@ -57,8 +57,19 @@ A mobile and web application built with React Native and Expo that helps users c
 | Week 7 (by 14/11/2025) | Smruti Sourav Patel | Added camera use, date and time picker for the app |
 | Week 7 (by 14/11/2025) | Bhavya Jain | Started working on APIs for backend |
 | Week 8 (by 21/11/2025) | All Team Members | Exam week - minimal work done |
-| Week 9 (by 28/11/2025) | Smruti Sourav Patel | Added the APIs to frontend with help from Bhavya |
+| Week 9 (by 28/11/2025) | Smruti Sourav Patel | Added the APIs to frontend |
 | Week 9 (by 28/11/2025) | All Team Members | Working on integration |
+| Week 10 (by 05/12/2025) | All Team Members | APIs integrated successfully but several issues identified |
+| Week 11 (by 12/12/2025) | All Team Members | Same integration issues persisting, debugging in progress |
+| Week 12 (by 19/12/2025) | Bhavya Jain | Backend shifted to Render server |
+| Week 12 (by 19/12/2025) | Smruti Sourav Patel | Updated API endpoints, Login and Register now working |
+| Week 13 (by 26/12/2025) | All Team Members | Fixed multiple bugs across frontend and backend |
+| Week 14 (by 02/01/2026) | All Team Members | Minimal work due to different commitments |
+| Week 15 (by 09/01/2026) | All Team Members | Identified data mismatch issues between frontend and backend |
+| Week 16 (by 16/01/2026) | Smruti Sourav Patel | Fixed data mismatches, other APIs now functional |
+| Week 17 (by 23/01/2026) | Smruti Sourav Patel | Continued work on frontend, some API integration issues remain |
+| Week 18 (by 29/01/2026) | Smruti Sourav Patel | Major frontend code overhaul - everything works seamlessly now, project almost complete |
+
 
 ## 🎯 About Foundly
 
