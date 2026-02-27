@@ -23,7 +23,7 @@ import { colors } from "../constants/colors";
 import * as itemsService from "../services/items.service";
 import * as uploadService from "../services/upload.service";
 import { ApiError } from "../utils/api";
-import { getUsername } from "../utils/storage";
+import { getUsername, saveItemPostType } from "../utils/storage";
 
 export default function PostLostScreen() {
   const router = useRouter();
@@ -211,7 +211,10 @@ export default function PostLostScreen() {
         itemImages: uploadedImageUrls,
       };
 
-      await itemsService.postFoundItem(itemData);
+      const response = await itemsService.postFoundItem(itemData);
+      if (response.success && response.data?.id) {
+        await saveItemPostType(response.data.id, "lost");
+      }
 
       Alert.alert("Success", "Lost item posted successfully!", [
         {

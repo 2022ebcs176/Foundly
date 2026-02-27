@@ -38,38 +38,39 @@ A mobile and web application built with React Native and Expo that helps users c
 
 ## 📋 Work Done Weekly with Dates
 
-| Timeline | Contributors | Work Done |
-|----------|-------------|-----------|
-| Month 1 (September 2025) | All Team Members | Planning and structure of the app finalized |
-| Week 1 (by 04/10/2025) | Vikas Singhal | UI/UX design for the app completed |
-| Week 2 (by 11/10/2025) | Bhavya Jain | Project initialization |
-| Week 2 (by 11/10/2025) | Smruti Sourav Patel | Worked on the Frontend of main app |
-| Week 3 (by 18/10/2025) | Tushar Sharma | Tested and reported issues in frontend |
-| Week 3 (by 18/10/2025) | Smruti Sourav Patel | Fixed reported issues, Frontend almost complete |
-| Week 4 (by 25/10/2025) | All Team Members | Festival break - minimal work done |
-| Week 5 (by 31/10/2025) | Bhavya Jain | Prepared the server for backend |
-| Week 5 (by 31/10/2025) | Smruti Sourav Patel | Fixed internet connectivity and added item not found page |
-| Week 5 (by 31/10/2025) | Vikas Singhal | Started working on admin panel UI/UX design |
-| Week 5 (by 31/10/2025) | Tushar Sharma | Started working on admin panel frontend code |
-| Week 6 (by 07/11/2025) | Tushar Sharma & Vikas Singhal | Made frontend for admin web panel |
-| Week 6 (by 07/11/2025) | Bhavya Jain | Started working on database |
-| Week 6 (by 07/11/2025) | Smruti Sourav Patel | Worked on polishing the frontend of main android app |
-| Week 7 (by 14/11/2025) | Smruti Sourav Patel | Added camera use, date and time picker for the app |
-| Week 7 (by 14/11/2025) | Bhavya Jain | Started working on APIs for backend |
-| Week 8 (by 21/11/2025) | All Team Members | Exam week - minimal work done |
-| Week 9 (by 28/11/2025) | Smruti Sourav Patel | Added the APIs to frontend |
-| Week 9 (by 28/11/2025) | All Team Members | Working on integration |
-| Week 10 (by 05/12/2025) | All Team Members | APIs integrated successfully but several issues identified |
-| Week 11 (by 12/12/2025) | All Team Members | Same integration issues persisting, debugging in progress |
-| Week 12 (by 19/12/2025) | Bhavya Jain | Backend shifted to Render server |
-| Week 12 (by 19/12/2025) | Smruti Sourav Patel | Updated API endpoints, Login and Register now working |
-| Week 13 (by 26/12/2025) | All Team Members | Fixed multiple bugs across frontend and backend |
-| Week 14 (by 02/01/2026) | All Team Members | Minimal work due to different commitments |
-| Week 15 (by 09/01/2026) | All Team Members | Identified data mismatch issues between frontend and backend |
-| Week 16 (by 16/01/2026) | Smruti Sourav Patel | Fixed data mismatches, other APIs now functional |
-| Week 17 (by 23/01/2026) | Smruti Sourav Patel | Continued work on frontend, some API integration issues remain |
-| Week 18 (by 29/01/2026) | Smruti Sourav Patel | Major frontend code overhaul - everything works seamlessly now, project almost complete |
-
+| Timeline                 | Contributors                  | Work Done                                                                                         |
+| ------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------- |
+| Month 1 (September 2025) | All Team Members              | Planning and structure of the app finalized                                                       |
+| Week 1 (by 04/10/2025)   | Vikas Singhal                 | UI/UX design for the app completed                                                                |
+| Week 2 (by 11/10/2025)   | Bhavya Jain                   | Project initialization                                                                            |
+| Week 2 (by 11/10/2025)   | Smruti Sourav Patel           | Worked on the Frontend of main app                                                                |
+| Week 3 (by 18/10/2025)   | Tushar Sharma                 | Tested and reported issues in frontend                                                            |
+| Week 3 (by 18/10/2025)   | Smruti Sourav Patel           | Fixed reported issues, Frontend almost complete                                                   |
+| Week 4 (by 25/10/2025)   | All Team Members              | Festival break - minimal work done                                                                |
+| Week 5 (by 31/10/2025)   | Bhavya Jain                   | Prepared the server for backend                                                                   |
+| Week 5 (by 31/10/2025)   | Smruti Sourav Patel           | Fixed internet connectivity and added item not found page                                         |
+| Week 5 (by 31/10/2025)   | Vikas Singhal                 | Started working on admin panel UI/UX design                                                       |
+| Week 5 (by 31/10/2025)   | Tushar Sharma                 | Started working on admin panel frontend code                                                      |
+| Week 6 (by 07/11/2025)   | Tushar Sharma & Vikas Singhal | Made frontend for admin web panel                                                                 |
+| Week 6 (by 07/11/2025)   | Bhavya Jain                   | Started working on database                                                                       |
+| Week 6 (by 07/11/2025)   | Smruti Sourav Patel           | Worked on polishing the frontend of main android app                                              |
+| Week 7 (by 14/11/2025)   | Smruti Sourav Patel           | Added camera use, date and time picker for the app                                                |
+| Week 7 (by 14/11/2025)   | Bhavya Jain                   | Started working on APIs for backend                                                               |
+| Week 8 (by 21/11/2025)   | All Team Members              | Exam week - minimal work done                                                                     |
+| Week 9 (by 28/11/2025)   | Smruti Sourav Patel           | Added the APIs to frontend                                                                        |
+| Week 9 (by 28/11/2025)   | All Team Members              | Working on integration                                                                            |
+| Week 10 (by 05/12/2025)  | All Team Members              | APIs integrated successfully but several issues identified                                        |
+| Week 11 (by 12/12/2025)  | All Team Members              | Same integration issues persisting, debugging in progress                                         |
+| Week 12 (by 19/12/2025)  | Bhavya Jain                   | Backend shifted to Render server                                                                  |
+| Week 12 (by 19/12/2025)  | Smruti Sourav Patel           | Updated API endpoints, Login and Register now working                                             |
+| Week 13 (by 26/12/2025)  | All Team Members              | Fixed multiple bugs across frontend and backend                                                   |
+| Week 14 (by 02/01/2026)  | All Team Members              | Minimal work due to different commitments                                                         |
+| Week 15 (by 09/01/2026)  | All Team Members              | Identified data mismatch issues between frontend and backend                                      |
+| Week 16 (by 16/01/2026)  | Smruti Sourav Patel           | Fixed data mismatches, other APIs now functional                                                  |
+| Week 17 (by 23/01/2026)  | Smruti Sourav Patel           | Continued work on frontend, some API integration issues remain                                    |
+| Week 18 (by 29/01/2026)  | Smruti Sourav Patel           | Major frontend code overhaul - everything works seamlessly now, project complete                  |
+| Week 19 (by 05/02/2026)  | Smruti Sourav Patel           | Fixed some bugs and added proper filtering of items                                               |
+| Week 20 (by 12/02/2026)  | Smruti Sourav Patel           | Final polishing of the app, fixed tag issues, and added final touches before project presentation |
 
 ## 🎯 About Foundly
 
@@ -129,34 +130,22 @@ npm install
 3. Start the development server:
 
 ```bash
-npm start
+npx expo start
 ```
 
 ## 🖥️ Running the App
 
-### Web
-
 ```bash
-npm run web
+npx expo start
 ```
-
-Then open [http://localhost:8081](http://localhost:8081) in your browser.
 
 ### Android
 
-```bash
-npm run android
-```
-
-Requires Android Studio and Android emulator or physical device.
-
-### iOS
-
-```bash
-npm run ios
-```
-
-Requires macOS and Xcode.
+- Start Metro first with `npx expo start`, then press `a` in the Expo terminal to launch Android.
+- If using an emulator, open Android Studio and start a virtual device before pressing `a`.
+- If using a physical phone, install **Expo Go**, enable Developer Options + USB debugging, and keep phone/laptop on the same network.
+- If LAN connection fails, run `npx expo start --tunnel` and open via Expo Go.
+- If the app behaves strangely after code changes, clear cache with `npx expo start --clear`.
 
 ## 📱 App Structure
 

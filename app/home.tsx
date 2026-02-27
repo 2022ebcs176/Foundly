@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -21,6 +21,7 @@ import { colors } from "../constants/colors";
 import * as itemsService from "../services/items.service";
 import * as userService from "../services/user.service";
 import type { FoundItem } from "../types/api.types";
+import { getItemPostTypeMap } from "../utils/storage";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -33,9 +34,12 @@ export default function HomeScreen() {
   const [activeTab, setActiveTab] = useState<"all" | "my">("all");
   const [allItems, setAllItems] = useState<FoundItem[]>([]);
   const [myItems, setMyItems] = useState<FoundItem[]>([]);
+  const [itemTypeMap, setItemTypeMap] = useState<
+    Record<string, "lost" | "found">
+  >({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fetch all items from API
   const fetchAllItems = useCallback(async () => {
@@ -58,6 +62,11 @@ export default function HomeScreen() {
       setIsLoading(false);
     }
   }, [selectedFilter, searchQuery]);
+
+  const loadItemTypeMap = useCallback(async () => {
+    const map = await getItemPostTypeMap();
+    setItemTypeMap(map);
+  }, []);
 
   // Fetch user's own items
   const fetchMyItems = useCallback(async () => {
@@ -91,12 +100,24 @@ export default function HomeScreen() {
 
   // Load items on mount and when filters change
   useEffect(() => {
+    loadItemTypeMap();
     if (activeTab === "all") {
       fetchAllItems();
     } else {
       fetchMyItems();
     }
-  }, [activeTab, selectedFilter]);
+  }, [activeTab, selectedFilter, loadItemTypeMap]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadItemTypeMap();
+      if (activeTab === "all") {
+        fetchAllItems();
+      } else {
+        fetchMyItems();
+      }
+    }, [activeTab, fetchAllItems, fetchMyItems, loadItemTypeMap]),
+  );
 
   // Handle search with API - debounced
   useEffect(() => {
@@ -143,95 +164,9 @@ export default function HomeScreen() {
   // Get items to display based on active tab
   const items = activeTab === "all" ? allItems : myItems;
 
-  // For "My Items" tab, filter locally by search
-  const filteredItems =
-    activeTab === "my"
-      ? items.filter((item) => {
-          const matchesSearch =
-            !searchQuery ||
-            item.itemName.toLowerCase().indexOf(searchQuery.toLowerCase()) !==
-              -1;
-          return matchesSearch;
-        })
-      : items; // "All Items" uses API search, no local filtering needed
-
   // Handle search query change
   const handleSearchChange = (text: string) => {
     setSearchQuery(text);
-  };
-
-  // Helper function to format time ago with proper date parsing
-  const getTimeAgo = (dateString: string, timeString?: string): string => {
-    try {
-      // Parse date string (format: yyyy-MM-dd or ISO format)
-      let date: Date;
-
-      if (!dateString) {
-        return "Unknown";
-      }
-
-      // Try to parse the date string
-      if (dateString.includes("T")) {
-        // ISO format with time
-        date = new Date(dateString);
-      } else {
-        // Date only format (yyyy-MM-dd)
-        const [year, month, day] = dateString.split("-");
-        if (year && month && day) {
-          // Create date in UTC to avoid timezone issues
-          // Use Date.UTC to get timestamp, then create Date object
-          date = new Date(
-            Date.UTC(
-              parseInt(year),
-              parseInt(month) - 1,
-              parseInt(day),
-              0,
-              0,
-              0,
-            ),
-          );
-        } else {
-          date = new Date(dateString);
-        }
-      }
-
-      if (isNaN(date.getTime())) {
-        return dateString; // Return original string if parsing fails
-      }
-
-      const now = new Date();
-      const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-      // If negative (future date), show the date
-      if (seconds < 0) {
-        const day = date.getDate().toString().padStart(2, "0");
-        const month = (date.getMonth() + 1).toString().padStart(2, "0");
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-      }
-
-      // If more than 7 days ago, show the actual date instead of "time ago"
-      if (seconds > 604800) {
-        // 7 days in seconds
-        const day = date.getDate().toString().padStart(2, "0");
-        const month = (date.getMonth() + 1).toString().padStart(2, "0");
-        const year = date.getFullYear();
-        return `${day}/${month}/${year}`;
-      }
-
-      if (seconds < 60) return `${seconds}s ago`;
-      const minutes = Math.floor(seconds / 60);
-      if (minutes < 60) return `${minutes}m ago`;
-      const hours = Math.floor(minutes / 60);
-      if (hours < 24) return `${hours}h ago`;
-      const days = Math.floor(hours / 24);
-      if (days < 7) return `${days}d ago`;
-
-      return "1w ago";
-    } catch (error) {
-      console.error("Error parsing date:", dateString, error);
-      return dateString || "Unknown";
-    }
   };
 
   // Helper function to format date for display in details
@@ -267,6 +202,61 @@ export default function HomeScreen() {
     // Fallback to default image
     return require("../assets/images/icon.png");
   };
+
+  const getItemType = (item: FoundItem): "lost" | "found" => {
+    const localType = itemTypeMap[item.id];
+    if (localType === "lost" || localType === "found") {
+      return localType;
+    }
+
+    const typedItem = item as FoundItem & {
+      type?: string;
+      itemType?: string;
+      postType?: string;
+      listingType?: string;
+      lost?: boolean;
+      isLost?: boolean;
+    };
+
+    if (typedItem.type === "lost" || typedItem.type === "found") {
+      return typedItem.type;
+    }
+
+    const normalizedType =
+      typedItem.itemType ?? typedItem.postType ?? typedItem.listingType;
+    if (typeof normalizedType === "string") {
+      const lowerType = normalizedType.toLowerCase();
+      if (lowerType === "lost") return "lost";
+      if (lowerType === "found") return "found";
+    }
+
+    if (typedItem.lost === true || typedItem.isLost === true) {
+      return "lost";
+    }
+
+    const itemText = `${item.itemHighlight ?? ""} ${item.itemDescription ?? ""}`
+      .toLowerCase()
+      .trim();
+    if (/\b(lost|missing|misplaced)\b/.test(itemText)) {
+      return "lost";
+    }
+    if (/\b(found|recovered|picked\s*up)\b/.test(itemText)) {
+      return "found";
+    }
+
+    return "found";
+  };
+
+  const filteredItems = items.filter((item) => {
+    const normalizedSearch = searchQuery.trim().toLowerCase();
+    const matchesSearch =
+      normalizedSearch.length === 0 ||
+      item.itemName.toLowerCase().includes(normalizedSearch);
+    const matchesType =
+      selectedFilter === "all" || getItemType(item) === selectedFilter;
+
+    return matchesSearch && matchesType;
+  });
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -353,8 +343,8 @@ export default function HomeScreen() {
             title={item.itemName}
             description={item.itemDescription}
             location={item.venue}
-            timeAgo={getTimeAgo(item.date)}
-            type="found"
+            timeAgo={formatDate(item.date)}
+            type={getItemType(item)}
             image={getImageSource(item)}
             onPress={() => {
               router.push(`/item-detail?id=${item.id}`);

@@ -1,17 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  FlatList,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    FlatList,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientButton } from "../components/GradientButton";
@@ -20,12 +20,16 @@ import { colors } from "../constants/colors";
 import { useAuth } from "../contexts/AuthContext";
 import * as userService from "../services/user.service";
 import type { FoundItem } from "../types/api.types";
+import { getItemPostTypeMap } from "../utils/storage";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout: authLogout, isLoading: authLoading } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [userPosts, setUserPosts] = useState<FoundItem[]>([]);
+  const [itemTypeMap, setItemTypeMap] = useState<
+    Record<string, "lost" | "found">
+  >({});
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [activeTab, setActiveTab] = useState<"info" | "posts">("info");
 
@@ -34,10 +38,20 @@ export default function ProfileScreen() {
     fetchUserPosts();
   }, []);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchUserPosts();
+    }, []),
+  );
+
   const fetchUserPosts = async () => {
     try {
       setIsLoadingPosts(true);
-      const response = await userService.getUserPosts();
+      const [response, map] = await Promise.all([
+        userService.getUserPosts(),
+        getItemPostTypeMap(),
+      ]);
+      setItemTypeMap(map);
       if (response.success && response.data) {
         setUserPosts(response.data.items);
       }
@@ -68,20 +82,81 @@ export default function ProfileScreen() {
     ]);
   };
 
-  // Helper function to format time ago
-  const getTimeAgo = (dateString: string): string => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+  const formatDate = (dateString: string): string => {
+    try {
+      if (!dateString) return "Unknown";
 
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return `${Math.floor(days / 7)}w ago`;
+      const [year, month, day] = dateString.split("-");
+      if (year && month && day) {
+        const date = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+        );
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+
+      const date = new Date(dateString);
+      if (!isNaN(date.getTime())) {
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+      }
+
+      return dateString;
+    } catch {
+      return dateString;
+    }
+  };
+
+  const getItemType = (item: FoundItem): "lost" | "found" => {
+    const localType = itemTypeMap[item.id];
+    if (localType === "lost" || localType === "found") {
+      return localType;
+    }
+
+    const typedItem = item as FoundItem & {
+      type?: string;
+      itemType?: string;
+      postType?: string;
+      listingType?: string;
+      lost?: boolean;
+      isLost?: boolean;
+    };
+
+    if (typedItem.type === "lost" || typedItem.type === "found") {
+      return typedItem.type;
+    }
+
+    const normalizedType =
+      typedItem.itemType ?? typedItem.postType ?? typedItem.listingType;
+    if (typeof normalizedType === "string") {
+      const lowerType = normalizedType.toLowerCase();
+      if (lowerType === "lost") return "lost";
+      if (lowerType === "found") return "found";
+    }
+
+    if (typedItem.lost === true || typedItem.isLost === true) {
+      return "lost";
+    }
+
+    const itemText = `${item.itemHighlight ?? ""} ${item.itemDescription ?? ""}`
+      .toLowerCase()
+      .trim();
+    if (/\b(lost|missing|misplaced)\b/.test(itemText)) {
+      return "lost";
+    }
+    if (/\b(found|recovered|picked\s*up)\b/.test(itemText)) {
+      return "found";
+    }
+
+    return "found";
   };
 
   return (
@@ -238,8 +313,8 @@ export default function ProfileScreen() {
                   title={item.itemName}
                   description={item.itemDescription}
                   location={item.venue}
-                  timeAgo={getTimeAgo(item.date)}
-                  type="found"
+                  timeAgo={formatDate(item.date)}
+                  type={getItemType(item)}
                   image={
                     item.itemImages && item.itemImages.length > 0
                       ? item.itemImages[0]

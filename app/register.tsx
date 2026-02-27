@@ -14,11 +14,9 @@ import {
 } from "react-native";
 import { GradientButton } from "../components/GradientButton";
 import { RoundedInput } from "../components/RoundedInput";
-import { API_BASE_URL } from "../constants/api";
 import { colors } from "../constants/colors";
 import { authService } from "../services/auth.service";
 import { ApiError } from "../utils/api";
-import { testBackendConnection, testInternetConnection } from "../utils/network-test";
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -27,13 +25,23 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [errors, setErrors] = useState({ username: "", email: "", password: "", confirmPassword: "" });
+  const [errors, setErrors] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
 
   const handleSignUp = async () => {
     setErrors({ username: "", email: "", password: "", confirmPassword: "" });
 
     let hasError = false;
-    const newErrors = { username: "", email: "", password: "", confirmPassword: "" };
+    const newErrors = {
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    };
 
     // Validate username
     if (!username.trim()) {
@@ -77,85 +85,42 @@ export default function RegisterScreen() {
 
     try {
       setIsLoading(true);
-      
+
       // Call the real backend API
       await authService.register({
         username: username.trim(),
         email: email.trim(),
         password: password,
       });
-      
+
       // Registration successful
-      Alert.alert(
-        "Success",
-        "Account created successfully! Please login.",
-        [{ text: "OK", onPress: () => router.replace("/login") }]
-      );
+      Alert.alert("Success", "Account created successfully! Please login.", [
+        { text: "OK", onPress: () => router.replace("/login") },
+      ]);
     } catch (error: any) {
       if (error instanceof ApiError) {
         Alert.alert(
           "Registration Failed",
           error.message || "Unable to create account. Please try again.",
-          [{ text: "OK" }]
+          [{ text: "OK" }],
         );
       } else {
         Alert.alert(
           "Registration Failed",
           "An unexpected error occurred. Please try again.",
-          [{ text: "OK" }]
+          [{ text: "OK" }],
         );
       }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleTestNetwork = async () => {
-    setIsLoading(true);
-    try {
-      // Test internet connection first
-      const internetTest = await testInternetConnection();
-      console.log('Internet test:', internetTest);
-      
-      if (!internetTest.success) {
-        Alert.alert(
-          "❌ No Internet",
-          "Your device has no internet connection. Please check WiFi/Data.",
-          [{ text: "OK" }]
-        );
-        return;
-      }
-      
-      // Test backend connection
-      const backendTest = await testBackendConnection(API_BASE_URL);
-      console.log('Backend test:', backendTest);
-      
-      if (backendTest.success) {
-        Alert.alert(
-          "✅ Connection OK",
-          `Internet: Working ✅\nBackend: Reachable ✅\nURL: ${API_BASE_URL}\nStatus: ${backendTest.statusCode}`,
-          [{ text: "OK" }]
-        );
-      } else {
-        Alert.alert(
-          "⚠️ Backend Offline",
-          `Internet: Working ✅\nBackend: Not Running ❌\n\nURL: ${API_BASE_URL}\n\nPlease start your Spring Boot server on port 9292.`,
-          [{ text: "OK" }]
-        );
-      }
-    } catch (error: any) {
-      Alert.alert(
-        "Network Test Failed",
-        error.message || "Unknown error",
-        [{ text: "OK" }]
-      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <LinearGradient colors={[colors.primaryStart, colors.primaryEnd]} style={styles.container}>
+    <LinearGradient
+      colors={[colors.primaryStart, colors.primaryEnd]}
+      style={styles.container}
+    >
       <StatusBar style="light" />
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -181,8 +146,10 @@ export default function RegisterScreen() {
               autoCapitalize="none"
               editable={!isLoading}
             />
-            {errors.username ? <Text style={styles.errorText}>{errors.username}</Text> : null}
-            
+            {errors.username ? (
+              <Text style={styles.errorText}>{errors.username}</Text>
+            ) : null}
+
             <RoundedInput
               label="Email"
               value={email}
@@ -195,8 +162,10 @@ export default function RegisterScreen() {
               placeholder="your.email@example.com"
               editable={!isLoading}
             />
-            {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
-            
+            {errors.email ? (
+              <Text style={styles.errorText}>{errors.email}</Text>
+            ) : null}
+
             <RoundedInput
               label="Password"
               value={password}
@@ -208,8 +177,10 @@ export default function RegisterScreen() {
               placeholder="********"
               editable={!isLoading}
             />
-            {errors.password ? <Text style={styles.errorText}>{errors.password}</Text> : null}
-            
+            {errors.password ? (
+              <Text style={styles.errorText}>{errors.password}</Text>
+            ) : null}
+
             <RoundedInput
               label="Confirm Password"
               value={confirmPassword}
@@ -221,8 +192,10 @@ export default function RegisterScreen() {
               placeholder="********"
               editable={!isLoading}
             />
-            {errors.confirmPassword ? <Text style={styles.errorText}>{errors.confirmPassword}</Text> : null}
-            
+            {errors.confirmPassword ? (
+              <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+            ) : null}
+
             <GradientButton
               containerStyle={styles.buttonSpacing}
               onPress={handleSignUp}
@@ -234,23 +207,13 @@ export default function RegisterScreen() {
                 "Sign Up"
               )}
             </GradientButton>
-
-            {/* Network Test Button - For Debugging */}
-            <GradientButton
-              containerStyle={styles.buttonSpacing}
-              onPress={handleTestNetwork}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color={colors.surface} />
-              ) : (
-                "🔍 Test Network Connection"
-              )}
-            </GradientButton>
           </View>
 
           <Text style={styles.footerText}>
-            Already have an account? <Link href="/login" style={styles.footerLink}>Sign in</Link>
+            Already have an account?{" "}
+            <Link href="/login" style={styles.footerLink}>
+              Sign in
+            </Link>
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

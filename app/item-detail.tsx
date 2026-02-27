@@ -3,30 +3,79 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  Image,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Alert,
+    Image,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GradientButton } from "../components/GradientButton";
 import { colors } from "../constants/colors";
 import * as itemsService from "../services/items.service";
 import type { FoundItem } from "../types/api.types";
+import { getItemPostType } from "../utils/storage";
 
 export default function ItemDetailScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [item, setItem] = useState<FoundItem | null>(null);
+  const [itemType, setItemType] = useState<"lost" | "found">("found");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchItemDetails();
   }, [params.id]);
+
+  const resolveItemType = (
+    value: FoundItem,
+    localType?: "lost" | "found" | null,
+  ): "lost" | "found" => {
+    if (localType === "lost" || localType === "found") {
+      return localType;
+    }
+
+    const typedItem = value as FoundItem & {
+      type?: string;
+      itemType?: string;
+      postType?: string;
+      listingType?: string;
+      lost?: boolean;
+      isLost?: boolean;
+    };
+
+    if (typedItem.type === "lost" || typedItem.type === "found") {
+      return typedItem.type;
+    }
+
+    const normalizedType =
+      typedItem.itemType ?? typedItem.postType ?? typedItem.listingType;
+    if (typeof normalizedType === "string") {
+      const lowerType = normalizedType.toLowerCase();
+      if (lowerType === "lost") return "lost";
+      if (lowerType === "found") return "found";
+    }
+
+    if (typedItem.lost === true || typedItem.isLost === true) {
+      return "lost";
+    }
+
+    const itemText =
+      `${value.itemHighlight ?? ""} ${value.itemDescription ?? ""}`
+        .toLowerCase()
+        .trim();
+    if (/\b(lost|missing|misplaced)\b/.test(itemText)) {
+      return "lost";
+    }
+    if (/\b(found|recovered|picked\s*up)\b/.test(itemText)) {
+      return "found";
+    }
+
+    return "found";
+  };
 
   const fetchItemDetails = async () => {
     try {
@@ -38,6 +87,8 @@ export default function ItemDetailScreen() {
           (i) => i.id === parseInt(params.id as string),
         );
         if (foundItem) {
+          const localType = await getItemPostType(foundItem.id);
+          setItemType(resolveItemType(foundItem, localType));
           setItem(foundItem);
         } else {
           Alert.alert("Error", "Item not found");
@@ -179,8 +230,15 @@ export default function ItemDetailScreen() {
               />
             </View>
           )}
-          <View style={[styles.badge, styles.foundBadge]}>
-            <Text style={styles.badgeText}>FOUND</Text>
+          <View
+            style={[
+              styles.badge,
+              itemType === "lost" ? styles.lostBadge : styles.foundBadge,
+            ]}
+          >
+            <Text style={styles.badgeText}>
+              {itemType === "lost" ? "LOST" : "FOUND"}
+            </Text>
           </View>
         </View>
 
@@ -249,7 +307,9 @@ export default function ItemDetailScreen() {
             </View>
             <View style={styles.posterInfo}>
               <Text style={styles.posterName}>{item.postedBy}</Text>
-              <Text style={styles.posterStats}>Found this item</Text>
+              <Text style={styles.posterStats}>
+                {itemType === "lost" ? "Lost this item" : "Found this item"}
+              </Text>
             </View>
             <Pressable style={styles.viewProfileButton}>
               <Ionicons
